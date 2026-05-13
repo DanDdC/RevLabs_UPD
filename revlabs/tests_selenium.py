@@ -1,4 +1,5 @@
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from revlabs.models import Car, Track
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -17,6 +18,26 @@ class BaseTestCase(StaticLiveServerTestCase):
     Classe-base que inicializa e encerra o Chrome em modo headless
     (sem interface gráfica) antes e depois de cada teste.
     """
+
+    def setUp(self):
+        # 1. Create a fake track for the test database
+        Track.objects.create(
+            slug_id='interlagos', 
+            name='Interlagos - Brazil', 
+            length_km=4.309, 
+            speed_multiplier=1.00, 
+            image_path='img/interlagos-icon.png'
+        )
+        
+        # 2. Create a fake car for the test database
+        Car.objects.create(
+            slug_id='mercedes', 
+            name="Mercedes-AMG GT Black Series '20", 
+            base_avg_speed_kmh=160.0, 
+            power_hp=730, 
+            weight_kg=1540, 
+            image_path='img/mercedes-amg.png'
+        )
 
     @classmethod
     def setUpClass(cls):
@@ -45,6 +66,11 @@ class BaseTestCase(StaticLiveServerTestCase):
         """Navega para uma URL relativa ao servidor de teste."""
         self.driver.get(self.live_server_url + caminho)
 
+    def pause_if_local(self, seconds=8):
+        """Pauses the test so you can watch it locally, but skips the wait during GitHub deployments."""
+        if not os.environ.get('GITHUB_ACTIONS'):
+            time.sleep(seconds)
+
 
 # -------------------------------------------------------------------------
 # Testes End-to-End do RevLabs
@@ -66,7 +92,7 @@ class Teste_01_FluxoSimulador(BaseTestCase):
         self.assertIn("Select your Circuit", body.text)
         self.assertIn("Interlagos - Brazil", body.text)
         
-        time.sleep(8)
+        self.pause_if_local(8)
 
     def test_02_deve_navegar_para_selecao_de_carros(self):
         print("Teste 02: Navegação da seleção de pistas para seleção de carros.")
@@ -86,7 +112,7 @@ class Teste_01_FluxoSimulador(BaseTestCase):
         self.assertIn("Top Choices", body.text)
         self.assertIn("Mercedes-AMG GT Black Series", body.text)
         
-        time.sleep(8)
+        self.pause_if_local(8)
 
     def test_03_deve_navegar_para_dashboard_e_ver_tempo(self):
         print("Teste 03: Navegação para o dashboard e visualização do tempo de volta.")
@@ -109,7 +135,7 @@ class Teste_01_FluxoSimulador(BaseTestCase):
         self.assertIn("VW Fusca", body.text)
         self.assertIn("Interlagos - Brazil", body.text)
         
-        time.sleep(8)
+        self.pause_if_local(8)
 
     def test_04_deve_interagir_com_menu_de_mods(self):
         print("Teste 04: Interação com os MODs e cálculo de tempo no dashboard.")
@@ -127,7 +153,7 @@ class Teste_01_FluxoSimulador(BaseTestCase):
         )
         mod_slot.click()
 
-        time.sleep(8)
+        self.pause_if_local(8)
         
         menu = self.wait.until(
             EC.visibility_of_element_located((By.ID, "mod-dropdown"))
@@ -140,14 +166,14 @@ class Teste_01_FluxoSimulador(BaseTestCase):
         )
         turbo_category.click()
 
-        time.sleep(8)
+        self.pause_if_local(8)
 
         # 4. Agora procura pela peça correta do Turbo e clica
         turbo_option = self.wait.until(
             EC.element_to_be_clickable((By.XPATH, "//span[contains(text(), 'Twin-Scroll Turbo Kit')]/ancestor::div[contains(@class, 'part-item')]"))
         )
 
-        time.sleep(8)
+        self.pause_if_local(8)
         
         # Usa JavaScript para clicar, prevenindo falhas de sobreposição (overlap)
         self.driver.execute_script("arguments[0].click();", turbo_option)
@@ -157,7 +183,7 @@ class Teste_01_FluxoSimulador(BaseTestCase):
             EC.presence_of_element_located((By.CSS_SELECTOR, "#lap-time-display.time-improved"))
         )
 
-        time.sleep(8)
+        self.pause_if_local(8)
         
         # 6. Valida que o tempo foi alterado com sucesso e não está quebrado (NaN)
         self.assertNotEqual(time_display.text, time_display_initial)
@@ -169,7 +195,7 @@ class Teste_01_FluxoSimulador(BaseTestCase):
         # 1. Starts at the Track Selection page
         self.abrir_pagina("/")
 
-        time.sleep(8)
+        self.pause_if_local(8)
         
         # 2. Selects a track (e.g., Monza)
         link_monza = self.wait.until(
@@ -177,7 +203,7 @@ class Teste_01_FluxoSimulador(BaseTestCase):
         )
         link_monza.click()
 
-        time.sleep(8)
+        self.pause_if_local(8)
         
         # Confirms the page navigated to Car Selection and the track is Monza
         body_vehicles = self.wait.until(
@@ -192,7 +218,7 @@ class Teste_01_FluxoSimulador(BaseTestCase):
         )
         link_carro.click()
 
-        time.sleep(8)
+        self.pause_if_local(8)
         
         # Confirms the dashboard loaded correctly
         body_dash = self.wait.until(
@@ -200,7 +226,7 @@ class Teste_01_FluxoSimulador(BaseTestCase):
         )
         self.assertIn("Lap time on this track", body_dash.text)
         
-        time.sleep(8) # Small pause for visual confirmation during testing
+        self.pause_if_local(8)
         
         # 4. Clicks the 'Vehicles' link in the top navigation bar to go back
         link_vehicles_nav = self.wait.until(
@@ -208,7 +234,7 @@ class Teste_01_FluxoSimulador(BaseTestCase):
         )
         link_vehicles_nav.click()
 
-        time.sleep(8)
+        self.pause_if_local(8)
         
         # 5. Confirms we successfully went back to the Car Selection page AND the track remained the same
         body_vehicles_back = self.wait.until(
