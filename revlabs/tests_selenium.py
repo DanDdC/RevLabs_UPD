@@ -28,6 +28,14 @@ class BaseTestCase(StaticLiveServerTestCase):
             speed_multiplier=1.00, 
             image_path='img/interlagos-icon.png'
         )
+
+        Track.objects.create(
+            slug_id='monza', 
+            name='Monza - Italy', 
+            length_km=5.793, 
+            speed_multiplier=1.20, 
+            image_path='img/monza.png'
+        )   
         
         # 2. Create a fake car for the test database
         Car.objects.create(
@@ -37,6 +45,15 @@ class BaseTestCase(StaticLiveServerTestCase):
             power_hp=730, 
             weight_kg=1540, 
             image_path='img/mercedes-amg.png'
+        )
+
+        Car.objects.create(
+            slug_id='fusca', 
+            name="VW Fusca", 
+            base_avg_speed_kmh=95.0, 
+            power_hp=65, 
+            weight_kg=840, 
+            image_path='img/vw-fusca.png'
         )
 
     @classmethod

@@ -21,7 +21,7 @@
     
     <div class="car-grid">
         {% for track in tracks %}
-        <a href="{% url 'car_selection' %}?track={{ track.id }}" style="text-decoration: none;">
+        <a href="{% url 'car_selection' %}?track={{ track.slug_id }}" style="text-decoration: none;">
             <div class="card track-card" style="width: auto;">
                 <img src="{% static track.image_path %}" alt="{{ track.name }}">
                 <h3>{{ track.name }}</h3>

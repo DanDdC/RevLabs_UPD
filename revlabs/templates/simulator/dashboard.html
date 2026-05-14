@@ -11,7 +11,7 @@
     <nav class="navbar">
         <div class="nav-links">
             <a href="{% url 'track_selection' %}">Circuits</a>
-            <a href="{% url 'car_selection' %}?track={{ track.id }}" class="active">Vehicles</a>
+            <a href="{% url 'car_selection' %}?track={{ track.slug_id }}" class="active">Vehicles</a>
         </div>
         <div class="user-profile">
             <span>DanDdC</span>
