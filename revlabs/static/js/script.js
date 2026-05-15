@@ -9,24 +9,24 @@ document.querySelectorAll('.mod-slot').forEach(slot => {
         activeSlotId = event.currentTarget.id;
 
         const rect = event.currentTarget.getBoundingClientRect();
-        let topPosition = rect.bottom;
-        let leftPosition = rect.left + 150;
+        let topPosition = rect.top;
+        let leftPosition = rect.left;
 
         // Prevent the menu from going off the right side of the screen
-        const modalWidth = 600; // Must match the width in your CSS
+        const modalWidth = 600; 
         if (leftPosition + modalWidth > window.innerWidth) {
-            leftPosition = window.innerWidth - modalWidth - 20; // 20px padding from the edge
+            leftPosition = window.innerWidth - modalWidth - 100; 
         }
 
         // Prevent the menu from going off the bottom of the screen
         const modalHeight = window.innerHeight * 0.5; // roughly 50vh as defined in CSS
         if (topPosition + modalHeight > window.innerHeight) {
-            topPosition = rect.top - modalHeight + 40; // Pop it open ABOVE the slot instead
+            topPosition = rect.bottom - modalHeight/3 - 30; // Pop it open ABOVE the slot instead
         }
 
         // Apply the calculated positions
         modModal.style.top = `${topPosition}px`;
-        modModal.style.left = `${leftPosition}px`;
+        modModal.style.left = `${leftPosition+200}px`;
 
         modModal.showModal();
 
