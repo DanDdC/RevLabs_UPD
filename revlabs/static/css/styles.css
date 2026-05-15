@@ -172,6 +172,108 @@ body {
     margin-top: auto; 
 }
 
+/* --- Modal Styles --- */
+.mod-modal {
+    margin: 0;
+    position: fixed; 
+    padding: 0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    width: auto;
+    max-height: 450px; 
+    overflow: hidden;
+    background: #fff;
+}
+
+.mod-modal::backdrop {
+    background: transparent; 
+}
+
+.modal-content-area {
+    display: flex;
+    flex-direction: row; 
+    height: 100%;
+}
+
+.menu-column {
+    padding: 10px 0;
+    overflow-y: auto;
+    border-right: 1px solid #eee;
+}
+
+.menu-column:last-child {
+    border-right: none;
+}
+
+.main-categories, .sub-categories {
+    min-width: 140px;
+    background-color: #fff;
+}
+
+.menu-column ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menu-column li {
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #333;
+    border-left: 4px solid transparent;
+    transition: background-color 0.2s;
+}
+
+.menu-column li:hover {
+    background-color: #f0f0f0;
+}
+
+.main-categories li.active-main {
+    background-color: #e6e6e6;
+    border-left: 4px solid #0099ff;
+    font-weight: bold;
+}
+
+.sub-categories li.active-sub {
+    background-color: #e6e6e6;
+    font-weight: bold;
+}
+
+.parts-list {
+    min-width: 180px;
+    display: flex;
+    flex-direction: column;
+}
+
+.part-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+}
+
+.part-item:hover {
+    background-color: #f9f9f9;
+}
+
+.part-item img {
+    width: 90px; 
+    height: 60px; 
+    object-fit: contain; 
+    margin-bottom: 8px;
+}
+
+.part-item span {
+    font-size: 0.85rem;
+    color: #333;
+    font-weight: 500;
+}
+
 /* Dropdown Menu */
 .dropdown-menu {
     position: absolute;
@@ -201,11 +303,6 @@ body {
     padding: 8px 15px;
     cursor: pointer;
     font-size: 0.9rem;
-}
-
-.menu-column li:hover, .active-category {
-    background-color: #f0f0f0;
-    font-weight: bold;
 }
 
 .part-item {

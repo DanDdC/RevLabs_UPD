@@ -53,60 +53,56 @@
 
         <section class="mod-grid">
             {% for i in "1234567890"|make_list %}
-            <div class="mod-slot empty" id="mod-{% if i == '0' %}10{% else %}{{ i }}{% endif %}" onclick="toggleModMenu(event)">
-                <span class="slot-label">MOD {% if i == '0' %}10{% else %}{{ i }}{% endif %}</span>
+            <div class="mod-slot empty" id="mod-{{ forloop.counter }}">
+                <span class="slot-label">MOD {{ forloop.counter }}</span>
             </div>
             {% endfor %}
         </section>
 
-        <div id="mod-dropdown" class="dropdown-menu hidden">
-            <div class="menu-column main-categories">
-                <ul>
-                    <li class="active-category">Engine</li>
-                    <li>Suspension</li>
-                    <li>Transmission</li>
-                    <li>Aerodynamics</li>
-                    <li>Drivetrain</li>
-                    <li>Brakes</li>
-                    <li>Tyres</li>
-                </ul>
-            </div>
-            <div class="menu-column sub-categories">
-                <ul>
-                    <li class="active-category" onclick="filterParts('Air Filters', this)">Air Filters</li>
-                    <li onclick="filterParts('ECU', this)">ECU</li>
-                    <li onclick="filterParts('Turbochargers', this)">Turbochargers</li>
-                    <li onclick="filterParts('Superchargers', this)">Superchargers</li>
-                    <li onclick="filterParts('Pistons', this)">Pistons</li>
-                </ul>
-            </div>
-            <div class="menu-column parts-list">
-                <div class="part-item" data-subcategory="Air Filters" onclick="installPart('Cold Air Intake', 12, -1, '{% static 'img/filtro_ar.png' %}')">
-                    <img src="{% static 'img/filtro_ar.png' %}" alt="Air Intake">
-                    <span>Cold Air Intake (+12 HP, -1 kg)</span>
-                </div>
-
-                <div class="part-item" data-subcategory="ECU" style="display: none;" onclick="installPart('Stage 2 ECU Remap', 55, 0, '{% static 'img/ecu.png' %}')">
-                    <img src="{% static 'img/ecu.png' %}" alt="ECU Remap">
-                    <span>Stage 2 ECU Remap (+55 HP, 0 kg)</span>
-                </div>
-
-                <div class="part-item" data-subcategory="Turbochargers" style="display: none;" onclick="installPart('Twin-Scroll Turbo Kit', 140, 18, '{% static 'img/turbo-icon.png' %}')">
-                    <img src="{% static 'img/turbo-icon.png' %}" alt="Turbo Kit">
-                    <span>Twin-Scroll Turbo Kit (+140 HP, +18 kg)</span>
-                </div>
-
-                <div class="part-item" data-subcategory="Superchargers" style="display: none;" onclick="installPart('Roots Supercharger', 110, 25, '{% static 'img/supercompressor.png' %}')">
-                    <img src="{% static 'img/supercompressor.png' %}" alt="Supercharger">
-                    <span>Roots Supercharger (+110 HP, +25 kg)</span>
-                </div>
-
-                <div class="part-item" data-subcategory="Pistons" style="display: none;" onclick="installPart('Forged Aluminum Pistons', 20, -3, '{% static 'img/pistao.png' %}')">
-                    <img src="{% static 'img/pistao.png' %}" alt="Forged Pistons">
-                    <span>Forged Aluminum Pistons (+20 HP, -3 kg)</span>
-                </div>
-            </div>
+        <dialog id="mod-modal" class="mod-modal">
+    <div class="modal-content-area">
+        
+        <div class="menu-column main-categories">
+            <ul id="main-category-list">
+                <li class="active-main" data-target-main="engine">Engine</li>
+                <li data-target-main="suspension">Suspension</li>
+                <li data-target-main="transmission">Transmission</li>
+                <li data-target-main="chassis">Chassis</li>
+                <li data-target-main="aerodynamics">Aerodynamics</li>
+                <li data-target-main="drivetrain">Drivetrain</li>
+                <li data-target-main="brakes">Brakes</li>
+                <li data-target-main="tyres">Tyres</li>
+            </ul>
         </div>
+
+        <div class="menu-column sub-categories">
+            <ul id="category-list">
+                {% for category in categories %}
+                    <li data-target="cat-{{ category.id }}" data-main-cat="{{ category.main_category }}" style="display: none;">
+                        {{ category.name }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="menu-column parts-list" id="modal-parts-grid">
+            {% for category in categories %}
+                {% for part in category.parts.all %}
+                    <div class="part-item cat-{{ category.id }}" 
+                         data-name="{{ part.name }}" 
+                         data-hp="{{ part.added_hp }}" 
+                         data-weight="{{ part.added_weight_kg }}" 
+                         data-img="{% static part.image_path %}">
+                        <img src="{% static part.image_path %}" alt="{{ part.name }}">
+                        <span>{{ part.name }}</span>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        
+    </div>
+</dialog>
+        
     </main>
 
     <script src="{% static 'js/script.js' %}"></script>
