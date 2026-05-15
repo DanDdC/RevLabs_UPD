@@ -1,5 +1,5 @@
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from revlabs.models import Car, Track
+from revlabs.models import Car, Track, PartCategory, CarPart
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -11,7 +11,7 @@ import time
 import os
 
 # -------------------------------------------------------------------------
-# Configuração base extraída do guia
+# Configuração base
 # -------------------------------------------------------------------------
 class BaseTestCase(StaticLiveServerTestCase):
     """
@@ -54,6 +54,20 @@ class BaseTestCase(StaticLiveServerTestCase):
             power_hp=65, 
             weight_kg=840, 
             image_path='img/vw-fusca.png'
+        )
+
+        # 3. Create a fake Part Category and Car Part for the test database
+        cat_turbo = PartCategory.objects.create(
+            name='Turbochargers',
+            main_category='engine'
+        )
+
+        CarPart.objects.create(
+            category=cat_turbo,
+            name='Twin-Scroll Turbo Kit',
+            added_hp=140,
+            added_weight_kg=18,
+            image_path='img/turbo-icon.png'
         )
 
     @classmethod
@@ -172,20 +186,21 @@ class Teste_01_FluxoSimulador(BaseTestCase):
 
         self.pause_if_local(8)
         
+        # 3. Espera o modal de IDs (atualizado de 'mod-dropdown' para 'mod-modal')
         menu = self.wait.until(
-            EC.visibility_of_element_located((By.ID, "mod-dropdown"))
+            EC.visibility_of_element_located((By.ID, "mod-modal"))
         )
         self.assertTrue(menu.is_displayed())
         
-        # 3. Clica na sub-categoria "Turbochargers" para filtrar
+        # 4. Clica na sub-categoria "Turbochargers" usando normalize-space para ignorar quebras de linha
         turbo_category = self.wait.until(
-            EC.element_to_be_clickable((By.XPATH, "//li[text()='Turbochargers']"))
+            EC.element_to_be_clickable((By.XPATH, "//li[normalize-space(text())='Turbochargers']"))
         )
         turbo_category.click()
 
         self.pause_if_local(8)
 
-        # 4. Agora procura pela peça correta do Turbo e clica
+        # 5. Procura pela peça correta do Turbo e clica
         turbo_option = self.wait.until(
             EC.element_to_be_clickable((By.XPATH, "//span[contains(text(), 'Twin-Scroll Turbo Kit')]/ancestor::div[contains(@class, 'part-item')]"))
         )
@@ -195,14 +210,14 @@ class Teste_01_FluxoSimulador(BaseTestCase):
         # Usa JavaScript para clicar, prevenindo falhas de sobreposição (overlap)
         self.driver.execute_script("arguments[0].click();", turbo_option)
         
-        # 5. Espera explicitamente a classe "time-improved" ser adicionada pelo JavaScript ao calcular o novo tempo
+        # 6. Espera explicitamente a classe "time-improved" ser adicionada pelo JavaScript ao calcular o novo tempo
         time_display = self.wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "#lap-time-display.time-improved"))
         )
 
         self.pause_if_local(8)
         
-        # 6. Valida que o tempo foi alterado com sucesso e não está quebrado (NaN)
+        # 7. Valida que o tempo foi alterado com sucesso e não está quebrado (NaN)
         self.assertNotEqual(time_display.text, time_display_initial)
         self.assertNotIn("NaN", time_display.text)
 
@@ -261,4 +276,3 @@ class Teste_01_FluxoSimulador(BaseTestCase):
         self.assertIn("Top Choices", body_vehicles_back.text)
         self.assertIn("Monza - Italy", body_vehicles_back.text) # Track check assertion
         self.assertNotIn("Interlagos - Brazil", body_vehicles_back.text)
-        

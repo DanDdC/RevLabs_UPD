@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import Car, Track
+from .models import Car, Track, PartCategory
 
 def time_to_seconds(time_str):
     m, s = time_str.split(':')
@@ -44,6 +44,8 @@ def dashboard(request):
     except Track.DoesNotExist:
         selected_track = Track.objects.first()
 
+    categories = PartCategory.objects.prefetch_related('parts').all()
+
     track_length = selected_track.length_km
     track_multiplier = selected_track.speed_multiplier
     
@@ -59,6 +61,7 @@ def dashboard(request):
         'track_length': track_length,
         'base_speed': base_speed,
         'base_power': selected_car.power_hp,
-        'base_weight': selected_car.weight_kg
+        'base_weight': selected_car.weight_kg,
+        'categories': categories
     }
     return render(request, 'simulator/dashboard.html', context)
