@@ -5,7 +5,8 @@ class Track(models.Model):
     name = models.CharField(max_length=100)
     length_km = models.FloatField()
     speed_multiplier = models.FloatField()
-    image_path = models.CharField(max_length=255, help_text="e.g., 'img/monza.png'")
+    image_path = models.CharField(max_length=255, help_text="e.g., 'img/monza-layout.png'")
+    bg_image_path = models.CharField(max_length=255, null=True, blank=True, help_text="e.g., 'img/monza-bg.jpg'")
 
     def __str__(self):
         return self.name

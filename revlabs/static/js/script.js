@@ -7,23 +7,54 @@ const incompatibilityMap = {
     "Fully Adjustable Race Coilovers": ["Street Coilovers"]
 };
 
+// --- SISTEMA DE POP-UP PREMIUM (HUD) ---
+function showSystemModal(title, message, isConfirm, callback) {
+    const modal = document.getElementById('system-modal');
+    document.getElementById('system-dialog-title').innerText = title;
+    document.getElementById('system-dialog-message').innerText = message;
+    
+    const actionsContainer = document.getElementById('system-dialog-actions');
+    actionsContainer.innerHTML = ''; 
+
+    if (isConfirm) {
+        const btnCancel = document.createElement('button');
+        btnCancel.className = 'btn-system cancel';
+        btnCancel.innerText = 'CANCEL';
+        btnCancel.onclick = () => { modal.close(); if(callback) callback(false); };
+
+        const btnConfirm = document.createElement('button');
+        btnConfirm.className = 'btn-system confirm';
+        btnConfirm.innerText = 'CONFIRM';
+        btnConfirm.onclick = () => { modal.close(); if(callback) callback(true); };
+
+        actionsContainer.appendChild(btnCancel);
+        actionsContainer.appendChild(btnConfirm);
+    } else {
+        const btnOk = document.createElement('button');
+        btnOk.className = 'btn-system confirm';
+        btnOk.innerText = 'OK';
+        btnOk.onclick = () => { modal.close(); };
+        actionsContainer.appendChild(btnOk);
+    }
+
+    modal.showModal();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    const modal = document.getElementById('mod-modal');
+    const modal = document.getElementById('mod-modal'); // Variável correta
     const addModBtn = document.getElementById('add-mod-btn');
     const mainCategories = document.querySelectorAll('#main-category-list li');
     const subCategories = document.querySelectorAll('#category-list li');
     const parts = document.querySelectorAll('.part-item');
 
+    // Abre o menu de seleção (Centralizado com scroll seguro)
     addModBtn.addEventListener('click', () => {
-        const rect = addModBtn.getBoundingClientRect();
-        
-        modal.style.margin = '0';
-        modal.style.right = 'auto';
-        modal.style.bottom = 'auto';
-        
-        modal.style.top = `${rect.bottom + 10}px`;
-        modal.style.left = `${rect.left + (rect.width / 2)}px`;
-        modal.style.transform = 'translateX(-50%)';
+        modal.style.margin = 'auto'; // Usando 'modal' em vez de 'modModal'
+        modal.style.right = '0';
+        modal.style.bottom = '0';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.transform = 'none';
         
         modal.showModal();
         
@@ -37,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Navegação entre abas
     mainCategories.forEach(mainLi => {
         mainLi.addEventListener('click', () => {
             mainCategories.forEach(li => li.classList.remove('active-main'));
@@ -71,6 +103,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Função encapsulada para instalar a peça
+    function installPart(partName, hp, weight, img, mainCat) {
+        const conflicts = incompatibilityMap[partName] || [];
+        for (const conflictMod of conflicts) {
+            if (installedMods[conflictMod]) {
+                showSystemModal("INCOMPATIBILITY DETECTED", `${partName} cannot be installed alongside ${conflictMod}.`, false);
+                return;
+            }
+        }
+        installedMods[partName] = { hp, weight, img, mainCat };
+        renderInstalledMods();
+        modal.close();
+    }
+
+    // Processamento da Instalação da Peça
     parts.forEach(part => {
         part.addEventListener('click', () => {
             const partName = part.getAttribute('data-name');
@@ -81,56 +128,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeSubLi = document.querySelector('#category-list li.active-category');
             const mainCat = activeSubLi ? activeSubLi.getAttribute('data-main-cat') : '';
 
-            // 1. Validação de item idêntico já instalado
+            // 1. Já instalado
             if (installedMods[partName]) {
-                alert('already installed');
+                showSystemModal("ITEM ALREADY FITTED", `The component "${partName}" is already installed on this vehicle.`, false);
                 return;
             }
 
-            // 2. Regra de Negócio de Pneus: Troca de compostos
+            // 2. Troca de Pneus
             if (mainCat === 'tyres') {
-                let existingTyreName = null;
-                for (const name in installedMods) {
-                    if (installedMods[name].mainCat === 'tyres') {
-                        existingTyreName = name;
-                        break;
-                    }
-                }
-
-                if (existingTyreName) {
-                    const swap = confirm(`${partName} is already installed, do you want to switch compounds?`);
-                    if (swap) {
-                        delete installedMods[existingTyreName];
-                    } else {
-                        return;
-                    }
+                let existingTyre = Object.keys(installedMods).find(key => installedMods[key].mainCat === 'tyres');
+                if (existingTyre) {
+                    showSystemModal("TYRE CHANGE", `Vehicle is currently fitted with ${existingTyre}. Proceed with mounting ${partName}?`, true, (agreed) => {
+                        if (agreed) {
+                            delete installedMods[existingTyre];
+                            installPart(partName, addedHp, addedWeight, imagePath, mainCat);
+                        }
+                    });
+                    return; 
                 }
             }
 
-            // 3. Validação de incompatibilidades cruzadas externas
-            const conflicts = incompatibilityMap[partName] || [];
-            for (const conflictMod of conflicts) {
-                if (installedMods[conflictMod]) {
-                    alert(`${partName} isn't compatible with ${conflictMod}`);
-                    return;
-                }
-            }
-
-            // Adiciona a peça nova ao estado
-            installedMods[partName] = {
-                hp: addedHp,
-                weight: addedWeight,
-                img: imagePath,
-                mainCat: mainCat
-            };
-
-            renderInstalledMods();
-            modal.close();
+            installPart(partName, addedHp, addedWeight, imagePath, mainCat);
         });
     });
 });
 
-// Renderização dinâmica da lista empilhada
+// Renderização dinâmica da lista empilhada (HTML Premium Restaurado)
 function renderInstalledMods() {
     const listContainer = document.getElementById('installed-mods-list');
     listContainer.innerHTML = '';
@@ -141,20 +164,20 @@ function renderInstalledMods() {
         row.className = 'installed-mod-row';
 
         const hpDisplay = mod.hp >= 0 ? `+${mod.hp} HP` : `${mod.hp} HP`;
-        const weightDisplay = mod.weight >= 0 ? `+${mod.weight} kg` : `${mod.weight} kg`;
+        const weightDisplay = mod.weight >= 0 ? `+${mod.weight} KG` : `${mod.weight} KG`;
 
         row.innerHTML = `
             <div class="mod-left-info">
                 <img src="${mod.img}" alt="${partName}" class="mod-row-img">
                 <div class="mod-text-details">
-                    <h4>${partName}</h4>
-                    <p class="mod-short-desc">Componente de alto rendimento configurado para Track Days.</p>
+                    <h4>${partName.toUpperCase()}</h4>
+                    <p class="mod-short-desc">TUNING PART</p>
                 </div>
             </div>
             <div class="mod-right-stats">
-                <span class="stat-badge hp">${hpDisplay}</span>
-                <span class="stat-badge weight">${weightDisplay}</span>
-                <button class="btn-remove-mod" onclick="removeModification('${partName}')">✕</button>
+                <span class="stat-badge">${hpDisplay}</span>
+                <span class="stat-badge">${weightDisplay}</span>
+                <button class="btn-remove-mod" onclick="removeModification('${partName}')">REMOVE</button>
             </div>
         `;
         listContainer.appendChild(row);
@@ -163,7 +186,6 @@ function renderInstalledMods() {
     recalculatePerformance();
 }
 
-// Expõe a remoção globalmente para funcionamento do atributo onclick
 window.removeModification = function(partName) {
     delete installedMods[partName];
     renderInstalledMods();
@@ -195,13 +217,7 @@ function recalculatePerformance() {
     }
 
     let powerRatio = totalPower / basePower;
-    let powerExponent = 0.30; 
-
-    if (basePower >= 500) {
-        powerExponent = 0.05; 
-    } else if (totalPower > 250) {
-        powerExponent = 0.15;
-    }
+    let powerExponent = basePower >= 500 ? 0.05 : (totalPower > 250 ? 0.15 : 0.30);
 
     const powerMultiplier = Math.pow(powerRatio, powerExponent);
     const weightMultiplier = Math.pow((baseWeight / totalWeight), 0.50);

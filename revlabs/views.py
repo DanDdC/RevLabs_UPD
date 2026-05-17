@@ -11,8 +11,18 @@ def seconds_to_time(seconds):
     return f"{m}:{s:06.3f}"
 
 def track_selection(request):
-    tracks = Track.objects.all()
-    return render(request, 'simulator/track_selection.html', {'tracks': tracks})
+    try:
+        hero_track = Track.objects.get(slug_id='nurburgring')
+        other_tracks = Track.objects.exclude(slug_id='nurburgring')
+    except Track.DoesNotExist:
+        hero_track = Track.objects.first()
+        other_tracks = Track.objects.exclude(id=hero_track.id) if hero_track else []
+
+    context = {
+        'hero_track': hero_track,
+        'tracks': other_tracks
+    }
+    return render(request, 'simulator/track_selection.html', context)
 
 def car_selection(request):
     track_id = request.GET.get('track', 'interlagos')

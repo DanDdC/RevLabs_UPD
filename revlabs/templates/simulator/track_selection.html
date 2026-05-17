@@ -4,50 +4,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RevLabs - Circuits</title>
+    <title>RevLabs - Select Circuit</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
-<body class="selection-body">
-    <nav class="navbar">
-        <div class="nav-links">
-            <a href="#" class="active" style="font-size: 1.3rem;">Circuits</a>
-        </div>
-        <div class="user-profile">
-            <span>DanDdC</span>
-            <img src="{% static 'img/avatar-placeholder.png' %}" alt="User Avatar" class="avatar">
-        </div>
-    </nav>
-    <h2 style="text-align: center; margin-top: 2rem;">Select your Circuit</h2>
-    
-    <div class="search-container" style="display: flex; justify-content: center; margin: 1.5rem 0 2rem 0;">
-        <input type="text" id="track-search" class="search-bar rectangular-search" placeholder="Search circuits...">
+<body>
+    <div class="video-bg-container">
+        <video autoplay muted loop playsinline class="bg-video">
+            <source src="{% static 'img/track_loop.mp4' %}" type="video/mp4">
+        </video>
+        <div class="video-overlay"></div>
     </div>
 
-    <div class="car-grid" id="track-grid-container">
-        {% for track in tracks %}
-        <a href="{% url 'car_selection' %}?track={{ track.slug_id }}" class="track-link" style="text-decoration: none;">
-            <div class="card track-card" style="width: auto;">
-                <img src="{% static track.image_path %}" alt="{{ track.name }}">
-                <h3>{{ track.name }}</h3>
-            </div>
-        </a>
-        {% endfor %}
+    <nav class="navbar">
+        <div class="nav-brand"><h1>REV<span>LABS</span></h1></div>
+        <div class="nav-menu">
+            <a href="#" class="nav-link active">CIRCUITS</a>
+            <a href="#" class="nav-link disabled-link" style="opacity: 0.25; pointer-events: none; cursor: not-allowed;">VEHICLES</a>
+        </div>
+        <div class="nav-profile">
+            <span class="profile-name">DanDdC</span>
+            <img src="{% static 'img/avatar-placeholder.png' %}" alt="DanDdC" class="profile-avatar">
+        </div>
+    </nav>
+
+    <div class="main-ui-wrapper">
+        <div class="main-layout">
+            
+            <aside class="sidebar">
+                <a href="#" class="side-item active" title="Circuits">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+                </a>
+                <a href="#" class="side-item disabled-link" title="Vehicles" style="opacity: 0.25; pointer-events: none; cursor: not-allowed;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                </a>
+                <a href="#" class="side-item disabled-link" title="Garage" style="opacity: 0.25; pointer-events: none; cursor: not-allowed;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                </a>
+                </aside>
+
+            <section class="main-content">
+                <header class="page-header">
+                    <div class="header-text">
+                        <h2 class="page-title">SELECT CIRCUIT</h2>
+                        <p class="page-subtitle">Choose your track and beat your best lap time.</p>
+                    </div>
+                    
+                    <div class="header-actions">
+                        <div class="search-container">
+                            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <input type="text" id="track-search" class="search-input" placeholder="Search circuits...">
+                        </div>
+                        <button class="filter-btn" title="Filter Circuits">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                        </button>
+                    </div>
+                </header>
+
+                {% if hero_track or tracks %}
+                <div class="split-layout-container">
+                    
+                    <div class="hero-column">
+                        {% if hero_track %} <a href="{% url 'car_selection' %}?track={{ hero_track.slug_id }}" class="hero-card">
+                            <div class="hero-card-bg" style="background-image: url('{% static hero_track.bg_image_path %}');"></div>
+                            <div class="hero-overlay"></div>
+                            
+                            <div class="hero-content">
+                                <div class="hero-top">
+                                    <span class="hero-badge">FEATURED CIRCUIT</span>
+                                </div>
+                                
+                                <div class="hero-map-wrapper">
+                                    <img src="{% static hero_track.image_path %}" alt="{{ hero_track.name }}" class="hero-map-outline">
+                                </div>
+                                
+                                <div class="hero-details">
+                                    <h3 class="hero-name">
+                                        {{ hero_track.name|upper }}
+                                    </h3>
+                                    
+                                    <div class="country-tag-container" style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                        {% if hero_track.slug_id == 'nurburgring' %}<img src="https://flagcdn.com/w20/de.png" class="flag-icon"><span class="small-country">GERMANY</span>
+                                        {% elif hero_track.slug_id == 'spa' %}<img src="https://flagcdn.com/w20/be.png" class="flag-icon"><span class="small-country">BELGIUM</span>
+                                        {% elif hero_track.slug_id == 'monza' %}<img src="https://flagcdn.com/w20/it.png" class="flag-icon"><span class="small-country">ITALY</span>
+                                        {% elif hero_track.slug_id == 'silverstone' %}<img src="https://flagcdn.com/w20/gb.png" class="flag-icon"><span class="small-country">UNITED KINGDOM</span>
+                                        {% elif hero_track.slug_id == 'suzuka' %}<img src="https://flagcdn.com/w20/jp.png" class="flag-icon"><span class="small-country">JAPAN</span>
+                                        {% elif hero_track.slug_id == 'interlagos' %}<img src="https://flagcdn.com/w20/br.png" class="flag-icon"><span class="small-country">BRAZIL</span>{% endif %}
+                                    </div>
+
+                                    <div class="hero-specs-grid">
+                                        <div class="spec-tile">
+                                            <span class="tile-label">LENGTH</span>
+                                            <span class="tile-value">{{ hero_track.length_km }} KM</span>
+                                        </div>
+                                        <div class="spec-tile">
+                                            <span class="tile-label">CORNERS</span>
+                                            <span class="tile-value">{% if hero_track.slug_id == 'nurburgring' %}154{% else %}19{% endif %}</span>
+                                        </div>
+                                        <div class="spec-tile">
+                                            <span class="tile-label">ELEVATION</span>
+                                            <span class="tile-value">{% if hero_track.slug_id == 'nurburgring' %}300M{% else %}42M{% endif %}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="hero-record-panel">
+                                        <span class="record-title">LAP RECORD</span>
+                                        <span class="record-time">6:49.328</span>
+                                        <span class="record-car">Porsche 911 GT3 RS (992) '22</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                        {% endif %}
+                    </div>
+
+                    <div class="grid-column">
+                        <div class="small-tracks-grid" id="track-grid-container">
+                            {% for track in tracks %} <div class="track-item-wrapper" data-name="{{ track.name|lower }}">
+                                <a href="{% url 'car_selection' %}?track={{ track.slug_id }}" class="small-track-card">
+                                    <div class="small-card-bg" style="background-image: url('{% static track.bg_image_path %}');"></div>
+                                    <div class="small-overlay"></div>
+                                    
+                                    <div class="small-map-wrapper">
+                                        <img src="{% static track.image_path %}" alt="{{ track.name }}" class="small-map-outline">
+                                    </div>
+                                    
+                                    <div class="small-card-footer">
+                                        <div class="small-footer-left">
+                                            <h4 class="circuit-name-text">{{ track.name|upper }}</h4>
+                                            <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+                                                {% if track.slug_id == 'nurburgring' %}<img src="https://flagcdn.com/w20/de.png" class="flag-icon"><span class="small-country">GERMANY</span>
+                                                {% elif track.slug_id == 'spa' %}<img src="https://flagcdn.com/w20/be.png" class="flag-icon"><span class="small-country">BELGIUM</span>
+                                                {% elif track.slug_id == 'monza' %}<img src="https://flagcdn.com/w20/it.png" class="flag-icon"><span class="small-country">ITALY</span>
+                                                {% elif track.slug_id == 'silverstone' %}<img src="https://flagcdn.com/w20/gb.png" class="flag-icon"><span class="small-country">UNITED KINGDOM</span>
+                                                {% elif track.slug_id == 'suzuka' %}<img src="https://flagcdn.com/w20/jp.png" class="flag-icon"><span class="small-country">JAPAN</span>
+                                                {% elif track.slug_id == 'interlagos' %}<img src="https://flagcdn.com/w20/br.png" class="flag-icon"><span class="small-country">BRAZIL</span>
+                                                {% else %}<span class="small-country">INTERNATIONAL</span>{% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="small-footer-right">
+                                            <span class="small-distance">{{ track.length_km }} KM</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="pagination" id="pagination-dots"></div>
+                    </div>
+                </div>
+                {% endif %}
+            </section>
+        </div>
     </div>
 
     <script>
+        const ITEMS_PER_PAGE = 6;
+        let currentPage = 0;
+        
+        function getActiveItems() {
+            const allItems = Array.from(document.querySelectorAll('.track-item-wrapper'));
+            return allItems.filter(item => item.getAttribute('data-filtered') !== 'true');
+        }
+
+        function renderPagination() {
+            const activeItems = getActiveItems();
+            const dotsContainer = document.getElementById('pagination-dots');
+            dotsContainer.innerHTML = '';
+            
+            const totalPages = Math.ceil(activeItems.length / ITEMS_PER_PAGE);
+            
+            if (totalPages <= 1) {
+                dotsContainer.style.display = 'none';
+            } else {
+                dotsContainer.style.display = 'flex';
+                for (let i = 0; i < totalPages; i++) {
+                    const dot = document.createElement('button');
+                    dot.className = `page-dot ${i === currentPage ? 'active' : ''}`;
+                    dot.addEventListener('click', () => {
+                        currentPage = i;
+                        showPage(currentPage);
+                    });
+                    dotsContainer.appendChild(dot);
+                }
+            }
+            showPage(currentPage);
+        }
+
+        function showPage(pageIndex) {
+            const activeItems = getActiveItems();
+            const allItems = document.querySelectorAll('.track-item-wrapper');
+            
+            allItems.forEach(el => el.style.display = 'none');
+            
+            const start = pageIndex * ITEMS_PER_PAGE;
+            const end = start + ITEMS_PER_PAGE;
+            
+            activeItems.slice(start, end).forEach(el => {
+                el.style.display = 'flex';
+            });
+
+            const dots = document.querySelectorAll('.page-dot');
+            dots.forEach((dot, idx) => {
+                if (idx === pageIndex) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        }
+
         document.getElementById('track-search').addEventListener('input', function(e) {
             const term = e.target.value.toLowerCase();
-            const tracks = document.querySelectorAll('.track-link');
+            const allItems = document.querySelectorAll('.track-item-wrapper');
             
-            tracks.forEach(track => {
-                const name = track.querySelector('h3').innerText.toLowerCase();
-                if(name.includes(term)) {
-                    track.style.display = 'block';
+            allItems.forEach(item => {
+                const name = item.getAttribute('data-name');
+                if (name.includes(term)) {
+                    item.removeAttribute('data-filtered');
                 } else {
-                    track.style.display = 'none';
+                    item.setAttribute('data-filtered', 'true');
                 }
             });
+            
+            currentPage = 0;
+            renderPagination();
         });
+
+        renderPagination();
     </script>
 </body>
 </html>
