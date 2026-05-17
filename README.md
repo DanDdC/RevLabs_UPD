@@ -8,11 +8,11 @@ O sistema permite que o usuário selecione um carro, escolha uma pista e configu
 
 ## Integrantes
 
-- Arthur Vitorino Fernandes
-- Daniel Donaire da Costa
-- Juan Riquelme Xavier de Souza
-- Kelwin Karan Leal Silva
-- Victor Carraly Henrique de Lima Menezes
+- Arthur Vitorino Fernandes [LinkedIn](https://www.linkedin.com/in/arthurvitorinofernandes/)
+- Daniel Donaire da Costa [LinkedIn](https://www.linkedin.com/in/dandonaire/)
+- Juan Riquelme Xavier de Souza [LinkedIn](https://www.linkedin.com/in/juanriquelmexavierdesouza/)
+- Kelwin Karan Leal Silva [LinkedIn](https://www.linkedin.com/in/kev-karan/)
+- Victor Carraly Henrique de Lima Menezes [LinkedIn](https://www.linkedin.com/in/victorcarraly/)
 
 ---
 
