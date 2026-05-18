@@ -1,0 +1,52 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account - RevLabs</title>
+    <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+</head>
+<body class="auth-body">
+    <div class="auth-bg" style="--fallback-poster: url('{% static 'img/bg/nurburgring.jpg' %}');">
+        <video class="landing-video" autoplay muted loop playsinline preload="metadata" poster="{% static 'img/landing/hero-poster.jpg' %}">
+            <source src="{% static 'videos/landing/hero-track.mp4' %}" type="video/mp4">
+        </video>
+        <div class="landing-video-fallback"></div>
+        <div class="landing-video-overlay"></div>
+    </div>
+
+    <main class="auth-shell">
+        <a href="{% url 'home' %}" class="auth-brand">REV<span>LABS</span></a>
+        <section class="auth-card signup-card">
+            <p class="landing-kicker">JOIN THE LAB</p>
+            <h1>Create Account</h1>
+            <p class="auth-subtitle">Create a RevLabs account and start tuning cars across circuits.</p>
+
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+
+                <label for="{{ form.username.id_for_label }}">Username</label>
+                {{ form.username }}
+                {{ form.username.errors }}
+
+                <label for="{{ form.email.id_for_label }}">Email</label>
+                {{ form.email }}
+                {{ form.email.errors }}
+
+                <label for="{{ form.password1.id_for_label }}">Password</label>
+                {{ form.password1 }}
+                {{ form.password1.errors }}
+
+                <label for="{{ form.password2.id_for_label }}">Confirm Password</label>
+                {{ form.password2 }}
+                {{ form.password2.errors }}
+
+                <button type="submit" class="landing-primary-btn auth-submit">CREATE ACCOUNT</button>
+            </form>
+
+            <p class="auth-alt">Already have an account? <a href="{% url 'login' %}">Login</a></p>
+        </section>
+    </main>
+</body>
+</html>

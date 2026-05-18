@@ -121,3 +121,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Add DEFAULT_AUTO_FIELD
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'track_selection'
+LOGOUT_REDIRECT_URL = 'home'

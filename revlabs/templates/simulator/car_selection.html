@@ -16,14 +16,18 @@
     </div>
 
     <nav class="navbar">
-        <div class="nav-brand"><h1>REV<span>LABS</span></h1></div>
+        <a href="{% url 'home' %}" class="nav-brand"><h1>REV<span>LABS</span></h1></a>
         <div class="nav-menu">
             <a href="{% url 'track_selection' %}" class="nav-link">CIRCUITS</a>
-            <a href="#" class="nav-link active">VEHICLES</a>
+            <a href="{% url 'car_selection' %}?track={{ selected_track.slug_id }}" class="nav-link active">VEHICLES</a>
         </div>
         <div class="nav-profile">
-            <span class="profile-name">DanDdC</span>
-            <img src="{% static 'img/avatar-placeholder.png' %}" alt="Avatar" class="profile-avatar">
+            <span class="profile-name">{{ user.username }}</span>
+            <img src="{% static 'img/avatar-placeholder.png' %}" alt="{{ user.username }}" class="profile-avatar">
+            <form action="{% url 'logout' %}" method="post" class="app-logout-form">
+                {% csrf_token %}
+                <button type="submit" class="app-logout-btn">LOG OUT</button>
+            </form>
         </div>
     </nav>
 

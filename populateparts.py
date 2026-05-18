@@ -24,8 +24,8 @@ cats = {
     'ECU': PartCategory.objects.create(main_category='engine', name='ECU'),
     'Turbochargers': PartCategory.objects.create(main_category='engine', name='Turbochargers'),
     'Superchargers': PartCategory.objects.create(main_category='engine', name='Superchargers'),
-    'Clutch & Flywheel': PartCategory.objects.create(main_category='drivetrain', name='Clutch & Flywheel'),
-    'Gearbox': PartCategory.objects.create(main_category='drivetrain', name='Gearbox'),
+    'Clutch & Flywheel': PartCategory.objects.create(main_category='transmission', name='Clutch & Flywheel'),
+    'Gearbox': PartCategory.objects.create(main_category='transmission', name='Gearbox'),
     'Differential': PartCategory.objects.create(main_category='drivetrain', name='Differential'),
     'Driveshaft': PartCategory.objects.create(main_category='drivetrain', name='Driveshaft'),
     'Weight Reduction': PartCategory.objects.create(main_category='chassis', name='Weight Reduction'),
@@ -55,13 +55,16 @@ catalogo_pecas = [
     (cats['Superchargers'], "Supercharger (Low-Torque)", 70, 25, "img/mods/supercompressor.png"),
     (cats['Superchargers'], "Supercharger (High-Torque)", 95, 30, "img/mods/highsupercharger.png"),
 
-    # Drivetrain
+    # Transmission
     (cats['Clutch & Flywheel'], "Sports Clutch & Flywheel", 0, -3, "img/mods/clutch-flywheel.png"),
     (cats['Clutch & Flywheel'], "Twin-Plate Racing Clutch", 0, -6, "img/mods/twin-clutch.png"),
     (cats['Clutch & Flywheel'], "Lightweight Flywheel", 0, -5, "img/mods/flywheel.png"),
+
     (cats['Gearbox'], "Close-Ratio Transmission (Low)", 0, 0, "img/mods/transmission.png"),
     (cats['Gearbox'], "Close-Ratio Transmission (High)", 0, 0, "img/mods/transmission.png"),
     (cats['Gearbox'], "Sequential Racing Gearbox", 0, -15, "img/mods/gearbox.png"),
+
+    # Drivetrain
     (cats['Differential'], "1.5-Way LSD", 0, 3, "img/mods/slipdiff.png"),
     (cats['Differential'], "2-Way Racing LSD", 0, 5, "img/mods/lsd.png"),
     (cats['Driveshaft'], "Carbon Fiber Driveshaft", 0, -8, "img/mods/driveshaft.png"),
@@ -86,8 +89,8 @@ catalogo_pecas = [
 
     # Chassis & Weight Reduction
     (cats['Weight Reduction'], "Stage 1: Strip Interior", 0, -60, "img/mods/weight-reduction.png"),
-    (cats['Weight Reduction'], "Stage 2: Carbon Fiber Panels", 0, -120, "img/mods/weight-reduction.png"),
-    (cats['Weight Reduction'], "Stage 3: Lexan Windows & Shell", 0, -180, "img/mods/weight-reduction.png"),
+    (cats['Weight Reduction'], "Stage 2: Carbon Fiber Panels", 0, -70, "img/mods/weight-reduction.png"),
+    (cats['Weight Reduction'], "Stage 3: Lexan Windows & Shell", 0, -50, "img/mods/weight-reduction.png"),
     (cats['Chassis Reinforcement'], "6-Point Roll Cage", 0, 35, "img/mods/rollcage.png"),
 
     # Tyres

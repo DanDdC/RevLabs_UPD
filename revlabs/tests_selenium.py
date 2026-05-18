@@ -6,6 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from django.contrib.auth.models import User
 from .models import Track, Car, PartCategory, CarPart
 
 class Teste_01_FluxoSimulador(LiveServerTestCase):
@@ -37,6 +38,8 @@ class Teste_01_FluxoSimulador(LiveServerTestCase):
     def setUp(self):
         """Popula o banco de dados de teste com dados mínimos necessários."""
         
+        self.user = User.objects.create_user(username="tester", password="RevLabsTest123")
+
         # 1. Pistas
         self.track1 = Track.objects.create(
             slug_id="interlagos",
@@ -106,10 +109,21 @@ class Teste_01_FluxoSimulador(LiveServerTestCase):
                 )
             )
 
+    def login_user(self):
+        self.browser.get(self.live_server_url + '/login/')
+        username = self.wait.until(EC.presence_of_element_located((By.NAME, "username")))
+        password = self.browser.find_element(By.NAME, "password")
+        username.clear()
+        username.send_keys("tester")
+        password.clear()
+        password.send_keys("RevLabsTest123")
+        self.browser.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
+        self.wait.until(lambda browser: '/circuits/' in browser.current_url)
+
     def test_01_deve_carregar_selecao_de_pistas(self):
         """Teste 01: Visualização da página de seleção de pistas."""
         print("Teste 01: Visualização da página de seleção de pistas.")
-        self.browser.get(self.live_server_url + '/')
+        self.login_user()
         
         body = self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         self.assertIn("SELECT CIRCUIT", body.text)
@@ -119,7 +133,7 @@ class Teste_01_FluxoSimulador(LiveServerTestCase):
     def test_02_deve_navegar_para_selecao_de_carros(self):
         """Teste 02: Navegação da seleção de pistas para seleção de carros."""
         print("Teste 02: Navegação da seleção de pistas para seleção de carros.")
-        self.browser.get(self.live_server_url + '/')
+        self.login_user()
         
         link_interlagos = self.wait.until(
             EC.element_to_be_clickable((By.XPATH, "//a[contains(@href, 'track=interlagos')]"))
@@ -135,6 +149,7 @@ class Teste_01_FluxoSimulador(LiveServerTestCase):
     def test_03_deve_navegar_para_dashboard_e_ver_tempo(self):
         """Teste 03: Navegação para o dashboard e visualização do tempo de volta."""
         print("Teste 03: Navegação para o dashboard e visualização do tempo de volta.")
+        self.login_user()
         self.browser.get(self.live_server_url + '/vehicles/?track=interlagos')
         
         link_carro = self.wait.until(
@@ -155,6 +170,7 @@ class Teste_01_FluxoSimulador(LiveServerTestCase):
     def test_04_deve_interagir_com_menu_de_mods(self):
         """Teste 04: Interação com os MODs e cálculo de tempo no dashboard."""
         print("Teste 04: Interação com os MODs e cálculo de tempo no dashboard.")
+        self.login_user()
         self.browser.get(self.live_server_url + '/dashboard/?track=interlagos&car=vw-fusca')
         
         tempo_inicial = self.wait.until(EC.presence_of_element_located((By.ID, "lap-time-display"))).text
@@ -191,7 +207,7 @@ class Teste_01_FluxoSimulador(LiveServerTestCase):
     def test_05_deve_voltar_para_veiculos_e_manter_pista(self):
         """Teste 05: Voltar do dashboard para a tela de veículos e verificar se a pista permanece a mesma."""
         print("Teste 05: Voltar do dashboard para a tela de veículos e verificar se a pista permanece a mesma.")
-        self.browser.get(self.live_server_url + '/')
+        self.login_user()
         
         link_monza = self.wait.until(
             EC.element_to_be_clickable((By.XPATH, "//a[contains(@href, 'track=monza')]"))

@@ -1,0 +1,172 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RevLabs - Motorsport Performance Lab</title>
+    <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+</head>
+<body class="landing-body">
+    <div class="landing-video-layer" style="--fallback-poster: url('{% static 'img/bg/nurburgring.jpg' %}');">
+        <video class="landing-video" autoplay muted loop playsinline preload="metadata" poster="{% static 'img/landing/hero-poster.jpg' %}">
+            <source src="{% static 'videos/landing/hero-track.mp4' %}" type="video/mp4">
+        </video>
+        <div class="landing-video-fallback"></div>
+        <div class="landing-video-overlay"></div>
+    </div>
+
+    <nav class="landing-nav">
+        <a href="{% url 'home' %}" class="landing-brand" aria-label="RevLabs home">
+            REV<span>LABS</span>
+        </a>
+
+        <div class="landing-nav-links">
+            <a href="#features">FEATURES</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'track_selection' %}">CIRCUITS</a>
+                <a href="{% url 'car_selection' %}">VEHICLES</a>
+            {% else %}
+                <a href="{% url 'login' %}?next={% url 'track_selection' %}">CIRCUITS</a>
+                <a href="{% url 'login' %}?next={% url 'car_selection' %}">VEHICLES</a>
+            {% endif %}
+        </div>
+
+        <div class="landing-nav-actions">
+            {% if user.is_authenticated %}
+                <span class="landing-user">{{ user.username }}</span>
+                <a class="landing-nav-button" href="{% url 'track_selection' %}">ENTER PLATFORM</a>
+                <form action="{% url 'logout' %}" method="post" class="landing-logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="landing-logout-button">LOG OUT</button>
+                </form>
+            {% else %}
+                <a class="landing-nav-button" href="{% url 'login' %}">LOGIN / SIGN UP</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="landing-page">
+        <section class="landing-hero" id="top">
+            <div class="landing-hero-content">
+                <p class="landing-kicker">MOTORSPORT PERFORMANCE LAB</p>
+                <h1>REV<span>LABS</span></h1>
+                <p class="landing-subtitle">
+                    Semi-realistic lap time simulation, vehicle tuning, and circuit-based performance analysis.
+                </p>
+
+                <div class="landing-hero-actions">
+                    {% if user.is_authenticated %}
+                        <a class="landing-primary-btn" href="{% url 'track_selection' %}">
+                            <span>ENTER PLATFORM</span>
+                        </a>
+                    {% else %}
+                        <a class="landing-primary-btn" href="{% url 'login' %}?next={% url 'track_selection' %}">
+                            <span>LOGIN TO ENTER</span>
+                        </a>
+                        <a class="landing-secondary-btn" href="{% url 'signup' %}">
+                            <span>CREATE ACCOUNT</span>
+                        </a>
+                    {% endif %}
+                </div>
+
+                <div class="landing-hero-note">
+                    <span></span>
+                    Track-focused simulation for enthusiasts, builders, students, and motorsport fans.
+                </div>
+            </div>
+
+            <div class="landing-hero-panel">
+                <div class="hero-mini-card">
+                    <span class="mini-label">REFERENCE CIRCUIT</span>
+                    <strong>{% if featured_track %}{{ featured_track.name|upper }}{% else %}NÜRBURGRING NORDSCHLEIFE{% endif %}</strong>
+                    <small>Track data, car selection, tuning parts and lap time solving in one workflow.</small>
+                </div>
+                <div class="hero-mini-card ghost-card">
+                    <span class="mini-label">PHYSICS MODEL</span>
+                    <strong>POWER · TYRES · AERO · BRAKES</strong>
+                    <small>Built around deterministic sector simulation instead of arbitrary global buffs.</small>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-section" id="features">
+            <div class="section-heading">
+                <p class="landing-kicker">FEATURES</p>
+                <h2>Build the setup before you hit the track.</h2>
+                <p>RevLabs lets you explore vehicle performance through circuits, cars, parts and tyre choices in a clean browser-based simulator.</p>
+            </div>
+
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <div class="feature-icon track-icon"></div>
+                    <div>
+                        <h3>Choose Circuits & Cars</h3>
+                        <p>Start from real-world-inspired circuits and compare vehicles across technical, high-speed and balanced layouts.</p>
+                    </div>
+                    <img src="{% static 'img/layout/nurburgring.png' %}" alt="Circuit layout" class="feature-art circuit-art">
+                </article>
+
+                <article class="feature-card">
+                    <div class="feature-icon wrench-icon"></div>
+                    <div>
+                        <h3>Apply Tuning Parts</h3>
+                        <p>Install tyres, aero, brakes, drivetrain upgrades, engine parts and weight reduction with coherent physical effects.</p>
+                    </div>
+                    <img src="{% static 'img/mods/racecoilovers.png' %}" alt="Performance part" class="feature-art part-art">
+                </article>
+
+                <article class="feature-card lap-feature-card">
+                    <div class="feature-icon graph-icon"></div>
+                    <div class="lap-feature-copy">
+                        <h3>Predict Lap Times</h3>
+                        <p>Estimate performance using a semi-realistic model that considers power, mass, grip, drag, downforce and braking.</p>
+                    </div>
+                    <div class="lap-widget">
+                        <span>Estimated Lap</span>
+                        <strong>1:27.452</strong>
+                        <small>+0.412 vs reference</small>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="landing-section landing-info-grid">
+            <article class="info-card wide-info-card">
+                <p class="landing-kicker">ABOUT REVLABS</p>
+                <h2>Why <span>RevLabs?</span></h2>
+                <p>
+                    RevLabs is built for enthusiasts who enjoy performance, data and experimentation. Instead of simply showing a spec sheet,
+                    it lets you test how a car changes when tyres, aero, braking, drivetrain and engine upgrades interact with different circuits.
+                </p>
+                <div class="pill-row">
+                    <span>No downloads</span>
+                    <span>Browser-based</span>
+                    <span>Setup experimentation</span>
+                </div>
+            </article>
+
+            <article class="info-card capabilities-card">
+                <p class="landing-kicker">CAPABILITIES</p>
+                <h2>What you can do</h2>
+                <ul>
+                    <li>Compare vehicles across multiple circuits</li>
+                    <li>Test tyre compounds and mandatory tyre setups</li>
+                    <li>Simulate tuning upgrades and removals</li>
+                    <li>Explore how track layout changes performance</li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="landing-final-cta">
+            <p class="landing-kicker">READY TO TUNE?</p>
+            <h2>Enter the lab and start building your lap.</h2>
+            {% if user.is_authenticated %}
+                <a class="landing-primary-btn" href="{% url 'track_selection' %}">OPEN CIRCUITS</a>
+            {% else %}
+                <a class="landing-primary-btn" href="{% url 'login' %}?next={% url 'track_selection' %}">LOGIN TO START</a>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

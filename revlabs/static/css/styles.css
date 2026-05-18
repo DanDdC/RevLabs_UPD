@@ -1127,3 +1127,30 @@ body {
     background: var(--neon-purple);
     border-radius: 3px;
 }
+/* Authentication controls added for the protected simulator pages */
+.nav-brand {
+    text-decoration: none;
+}
+
+.app-logout-form {
+    display: inline-flex;
+}
+
+.app-logout-btn {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.app-logout-btn:hover {
+    color: #fff;
+    border-color: rgba(255, 77, 0, 0.45);
+    background: rgba(255, 77, 0, 0.08);
+}

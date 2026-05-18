@@ -10,9 +10,6 @@ const incompatibilityMap = {
     "Street Coilovers": ["Fully Adjustable Race Coilovers"],
     "Fully Adjustable Race Coilovers": ["Street Coilovers"],
 
-    "Stage 1: Strip Interior": ["Stage 2: Carbon Fiber Panels", "Stage 3: Lexan Windows & Shell"],
-    "Stage 2: Carbon Fiber Panels": ["Stage 1: Strip Interior", "Stage 3: Lexan Windows & Shell"],
-    "Stage 3: Lexan Windows & Shell": ["Stage 1: Strip Interior", "Stage 2: Carbon Fiber Panels"],
 };
 
 // ==========================================================================
@@ -27,12 +24,19 @@ const incompatibilityMap = {
 //
 // These are calibrated game/simulation coefficients, not manufacturer data.
 const BASE_CAR_STATS = {
-    'vw-fusca':     { cda: 0.85, cla: 0.00, mu: 0.84, brake_eff: 0.78, drivetrain_loss: 0.16, traction: 0.55 },
-    'vw-brasilia':  { cda: 0.82, cla: 0.00, mu: 0.86, brake_eff: 0.80, drivetrain_loss: 0.16, traction: 0.56 },
-    'vw-parati':    { cda: 0.75, cla: 0.02, mu: 0.92, brake_eff: 0.86, drivetrain_loss: 0.15, traction: 0.58 },
-    'ferrari-458':  { cda: 0.65, cla: 0.30, mu: 1.27, brake_eff: 1.00, drivetrain_loss: 0.12, traction: 0.66 },
-    'porsche-911':  { cda: 0.78, cla: 0.70, mu: 1.34, brake_eff: 1.02, drivetrain_loss: 0.10, traction: 0.72 },
-    'mercedes-amg': { cda: 0.76, cla: 0.62, mu: 1.36, brake_eff: 1.01, drivetrain_loss: 0.12, traction: 0.70 }
+    // chassis_flex expresses how much the platform benefits from rigidity/bracing mods.
+    // Old, flexible road shells benefit more; modern track-focused cars benefit very little.
+    'vw-fusca':     { cda: 0.85, cla: 0.00, mu: 0.84, brake_eff: 0.78, drivetrain_loss: 0.16, traction: 0.55, chassis_flex: 0.95 },
+    'vw-brasilia':  { cda: 0.82, cla: 0.00, mu: 0.86, brake_eff: 0.80, drivetrain_loss: 0.16, traction: 0.56, chassis_flex: 0.88 },
+    'vw-parati':    { cda: 0.75, cla: 0.02, mu: 0.92, brake_eff: 0.86, drivetrain_loss: 0.15, traction: 0.58, chassis_flex: 0.62 },
+
+    // Ferrari is calibrated as a 2009 road supercar on high-performance road tyres.
+    // It has strong power/top speed, but far less aero and transient stability than the newer track specials.
+    'ferrari-458':  { cda: 0.68, cla: 0.10, mu: 1.08, brake_eff: 0.90, drivetrain_loss: 0.12, traction: 0.60, chassis_flex: 0.30 },
+
+    // Modern track-focused road cars. Their factory tyres are handled by DEFAULT_TYRE_BY_CAR.
+    'porsche-911':  { cda: 0.78, cla: 0.70, mu: 1.34, brake_eff: 1.02, drivetrain_loss: 0.10, traction: 0.72, chassis_flex: 0.12 },
+    'mercedes-amg': { cda: 0.78, cla: 0.50, mu: 1.30, brake_eff: 0.97, drivetrain_loss: 0.12, traction: 0.68, chassis_flex: 0.16 }
 };
 
 // Database/url compatibility aliases. The simulator normalizes every car slug before lookup.
@@ -78,8 +82,83 @@ const TYRE_CLASS_EFFECTS = {
     'Racing Slicks': { mu: 0.275, traction: 0.055, cda: 0.006 }
 };
 
-function getCurrentTyreName() {
-    return Object.keys(installedMods).find(key => installedMods[key].mainCat === 'tyres') || null;
+// Same weight values used in populateparts.py. This lets the reference stock solver
+// reproduce the same factory tyre mass contribution even when the user has installed another tyre.
+const TYRE_CATALOG_WEIGHTS = {
+    'Touring Tyres': 0,
+    'Performance Tyres': -1,
+    'High-Performance Tyres': -2,
+    'Semi-Slick Track Tyres': -4,
+    'Racing Slicks': -6
+};
+
+// Hybrid calibration layer:
+// 1) the physics solver computes how a setup changes performance;
+// 2) the stock result is anchored to a reference lap gathered from official/track-test/sim-racing data;
+// 3) upgrades use the solver ratio relative to that stock baseline.
+// This avoids fake per-upgrade lap-time buffs while keeping stock cars close to real/sim reference pace.
+const REFERENCE_STOCK_LAP_SECONDS = {
+    'porsche-911': {
+        // Official/track-test/sim blend: 6:49.328 Nordschleife, 1:55.3 Monza,
+        // 2:08.34 Silverstone GP, 2:29.23 Spa, and TrackTitan-style Suzuka reference.
+        nurburgring: 409.328,
+        monza: 115.300,
+        silverstone: 128.340,
+        spa: 149.230,
+        suzuka: 132.859,
+        interlagos: 100.500
+    },
+    'mercedes-amg': {
+        // Anchored to the official 20.832 km Nürburgring record and scaled against the GT3 RS elsewhere.
+        nurburgring: 408.047,
+        monza: 113.900,
+        silverstone: 128.000,
+        spa: 148.900,
+        suzuka: 132.000,
+        interlagos: 99.800
+    },
+    'ferrari-458': {
+        // Older supercar reference: Nürburgring real-world lap plus Assetto Corsa/TrackTitan ranges.
+        nurburgring: 452.900,
+        monza: 120.600,
+        silverstone: 137.500,
+        spa: 158.000,
+        suzuka: 141.000,
+        interlagos: 109.000
+    },
+    'vw-parati': {
+        // Low-confidence class: recalibrated upward after GT/sim sanity checks.
+        // Stock Parati remains a light road car, but should not behave like a modern hot hatch.
+        nurburgring: 656.000,
+        monza: 190.000,
+        silverstone: 203.000,
+        spa: 241.000,
+        suzuka: 213.000,
+        interlagos: 160.000
+    },
+    'vw-brasilia': {
+        // Low-confidence class: older air-cooled VW platform; slower than Parati and close to Fusca pace.
+        nurburgring: 766.000,
+        monza: 223.000,
+        silverstone: 232.000,
+        spa: 280.000,
+        suzuka: 245.000,
+        interlagos: 184.000
+    },
+    'vw-fusca': {
+        // Low-confidence class: anchored to a Gran Turismo sanity check around Interlagos.
+        // Stock Fusca + Touring Tyres should sit around 2:56 at Interlagos, not 2:32.
+        nurburgring: 746.000,
+        monza: 217.000,
+        silverstone: 226.000,
+        spa: 274.000,
+        suzuka: 236.000,
+        interlagos: 176.000
+    }
+};
+
+function getCurrentTyreName(mods = installedMods) {
+    return Object.keys(mods).find(key => mods[key].mainCat === 'tyres') || null;
 }
 
 function getDefaultTyreForCar(carSlug) {
@@ -93,53 +172,64 @@ function getDefaultTyreForCar(carSlug) {
 // All names below are synchronized with populateparts.py.
 const MOD_PHYSICS_MAP = {
     // Engine internals / intake / ECU
-    "Forged Aluminum Pistons": { inertia: -0.01 },
-    "Bore Up": { inertia: +0.01 },
-    "Engine Balance Tuning": { inertia: -0.015, powerband: +0.015 },
-    "High Compression Pistons": { powerband: +0.02 },
-    "Cold Air Intake": { powerband: +0.01 },
-    "Stage 2 ECU Remap": { powerband: +0.02 },
+    // Added HP already comes from populateparts.py. These values only model response, inertia and usable powerband.
+    "Forged Aluminum Pistons": { inertia: -0.010, powerband: +0.006 },
+    "Bore Up": { inertia: +0.010, powerband: +0.010 },
+    "Engine Balance Tuning": { inertia: -0.015, powerband: +0.014 },
+    "High Compression Pistons": { powerband: +0.018 },
+    "Cold Air Intake": { powerband: +0.008 },
+    "Stage 2 ECU Remap": { powerband: +0.018 },
 
     // Forced induction
-    "Low-RPM Turbocharger": { powerband: +0.025, inertia: +0.015 },
-    "High-RPM Turbocharger": { powerband: +0.035, inertia: +0.025 },
-    "Supercharger (Low-Torque)": { powerband: +0.03, drivetrain_loss: +0.01, inertia: +0.02 },
-    "Supercharger (High-Torque)": { powerband: +0.04, drivetrain_loss: +0.015, inertia: +0.025 },
+    // Turbos/superchargers primarily add power via added_hp. These modifiers bias how usable that power is.
+    "Low-RPM Turbocharger": { powerband: +0.020, acceleration_bias: +0.010, inertia: +0.012 },
+    "High-RPM Turbocharger": { powerband: +0.030, acceleration_bias: -0.004, top_speed_bias: +0.010, inertia: +0.024 },
+    "Supercharger (Low-Torque)": { powerband: +0.026, acceleration_bias: +0.012, drivetrain_loss: +0.010, inertia: +0.018 },
+    "Supercharger (High-Torque)": { powerband: +0.034, acceleration_bias: +0.014, drivetrain_loss: +0.015, inertia: +0.024 },
+
+    // Transmission
+    "Sports Clutch & Flywheel": { inertia: -0.012, shift_loss: -0.008 },
+    "Twin-Plate Racing Clutch": { inertia: -0.018, shift_loss: -0.013 },
+    "Lightweight Flywheel": { inertia: -0.020, powerband: +0.008 },
+    "Close-Ratio Transmission (Low)": { acceleration_bias: +0.030, top_speed_bias: -0.030, shift_loss: -0.008 },
+    "Close-Ratio Transmission (High)": { acceleration_bias: +0.014, top_speed_bias: +0.006, shift_loss: -0.008 },
+    "Sequential Racing Gearbox": { drivetrain_loss: -0.025, shift_loss: -0.026, acceleration_bias: +0.010 },
 
     // Drivetrain
-    "Sports Clutch & Flywheel": { inertia: -0.015, shift_loss: -0.010 },
-    "Twin-Plate Racing Clutch": { inertia: -0.020, shift_loss: -0.015 },
-    "Lightweight Flywheel": { inertia: -0.020, powerband: +0.010 },
-    "Close-Ratio Transmission (Low)": { acceleration_bias: +0.035, top_speed_bias: -0.020, shift_loss: -0.010 },
-    "Close-Ratio Transmission (High)": { acceleration_bias: +0.020, top_speed_bias: +0.010, shift_loss: -0.010 },
-    "Sequential Racing Gearbox": { drivetrain_loss: -0.035, shift_loss: -0.030, acceleration_bias: +0.015 },
-    "1.5-Way LSD": { traction: +0.030, mu: +0.010 },
-    "2-Way Racing LSD": { traction: +0.045, mu: +0.020 },
-    "Carbon Fiber Driveshaft": { drivetrain_loss: -0.010, inertia: -0.015 },
+    // LSDs improve power deployment and corner exit traction. They should not create large lateral grip directly.
+    "1.5-Way LSD": { traction: +0.026, stability: +0.006 },
+    "2-Way Racing LSD": { traction: +0.038, stability: +0.010 },
+    "Carbon Fiber Driveshaft": { drivetrain_loss: -0.008, inertia: -0.012 },
 
     // Brakes
-    "Slotted Steel Discs": { brake_eff: +0.040 },
-    "Carbon Ceramic Discs": { brake_eff: +0.100, inertia: -0.010 },
-    "Sports Brake Calipers": { brake_eff: +0.035 },
-    "Performance Brake Kit": { brake_eff: +0.070 },
-    "Racing Calipers": { brake_eff: +0.060 },
+    // Tyres cap braking; brake upgrades mainly improve consistency and high-speed confidence.
+    "Slotted Steel Discs": { brake_eff: +0.030 },
+    "Carbon Ceramic Discs": { brake_eff: +0.075, inertia: -0.010 },
+    "Sports Brake Calipers": { brake_eff: +0.026 },
+    "Performance Brake Kit": { brake_eff: +0.055 },
+    "Racing Calipers": { brake_eff: +0.050 },
 
-    // Suspension / chassis
-    "Street Coilovers": { mu: +0.020, stability: +0.010 },
-    "Fully Adjustable Race Coilovers": { mu: +0.050, stability: +0.025 },
-    "Stiffened Anti-roll Bars": { mu: +0.020, stability: +0.015 },
-    "6-Point Roll Cage": { stability: +0.030, mu: +0.015 },
+    // Suspension / chassis setup
+    "Street Coilovers": { mu: +0.012, stability: +0.010 },
+    "Fully Adjustable Race Coilovers": { mu: +0.032, stability: +0.024 },
+    "Stiffened Anti-roll Bars": { mu: +0.010, stability: +0.020 },
+
+    // A roll cage is primarily safety equipment. It adds meaningful mass.
+    // It can stiffen older flexible shells, but should not be a universal grip upgrade.
+    "6-Point Roll Cage": { rigidity: +0.045, stability: +0.004 },
 
     // Aerodynamics
-    "Rear Diffuser": { cla: +0.070, cda: -0.006, stability: +0.005 },
-    "Carbon Fiber Rear Diffuser": { cla: +0.110, cda: -0.012, stability: +0.008 },
-    "Carbon Fiber Splitter": { cla: +0.140, cda: +0.020, stability: +0.010 },
-    "Adjustable GT Wing": { cla: +0.220, cda: +0.045, stability: +0.015 },
+    "Rear Diffuser": { cla: +0.060, cda: -0.004, stability: +0.004 },
+    "Carbon Fiber Rear Diffuser": { cla: +0.095, cda: -0.009, stability: +0.006 },
+    "Carbon Fiber Splitter": { cla: +0.115, cda: +0.018, stability: +0.008 },
+    "Adjustable GT Wing": { cla: +0.180, cda: +0.040, stability: +0.012 },
 
     // Weight reduction
-    "Stage 1: Strip Interior": { stability: -0.005 },
-    "Stage 2: Carbon Fiber Panels": { stability: -0.008 },
-    "Stage 3: Lexan Windows & Shell": { stability: -0.015, mu: -0.010 },
+    // The weight deltas in populateparts.py are the main performance effect.
+    // Small stability penalties model reduced NVH/trim/comfort rather than true loss of grip.
+    "Stage 1: Strip Interior": { stability: -0.002 },
+    "Stage 2: Carbon Fiber Panels": { stability: -0.003 },
+    "Stage 3: Lexan Windows & Shell": { stability: -0.006 },
 
     // Tyres are handled by TYRE_CLASS_EFFECTS using relative deltas from the car's factory tyre.
 };
@@ -392,7 +482,7 @@ function renderInstalledMods() {
                 <img src="${mod.img}" alt="${partName}" class="mod-row-img">
                 <div class="mod-text-details">
                     <h4>${partName.toUpperCase()}</h4>
-                    <p class="mod-short-desc">TUNING PART</p>
+                    <p class="mod-short-desc">${desc}</p>
                 </div>
             </div>
             <div class="mod-right-stats">
@@ -440,7 +530,7 @@ function getSimulationContext(timeDisplay) {
     };
 }
 
-function applyInstalledMods(baseStats, basePowerHP, baseWeightKG, carSlug) {
+function applyInstalledMods(baseStats, basePowerHP, baseWeightKG, carSlug, mods = installedMods) {
     const dyn = {
         powerHP: basePowerHP,
         weightKG: baseWeightKG,
@@ -455,16 +545,18 @@ function applyInstalledMods(baseStats, basePowerHP, baseWeightKG, carSlug) {
         top_speed_bias: 0,
         shift_loss: 0,
         inertia: 0,
-        stability: 0
+        stability: 0,
+        rigidity: 0,
+        chassis_flex: baseStats.chassis_flex ?? 0.35
     };
 
-    for (const name in installedMods) {
-        dyn.powerHP += installedMods[name].hp || 0;
-        dyn.weightKG += installedMods[name].weight || 0;
+    for (const name in mods) {
+        dyn.powerHP += mods[name].hp || 0;
+        dyn.weightKG += mods[name].weight || 0;
 
         // Tyres are not additive generic mods. They are handled below as a selected compound
         // relative to the car's factory/default tyre.
-        if (installedMods[name].mainCat === 'tyres') continue;
+        if (mods[name].mainCat === 'tyres') continue;
 
         const phys = MOD_PHYSICS_MAP[name];
         if (!phys) continue;
@@ -476,7 +568,7 @@ function applyInstalledMods(baseStats, basePowerHP, baseWeightKG, carSlug) {
         }
     }
 
-    const currentTyre = getCurrentTyreName();
+    const currentTyre = getCurrentTyreName(mods);
     const defaultTyre = getDefaultTyreForCar(carSlug);
 
     if (currentTyre && defaultTyre && TYRE_CLASS_EFFECTS[currentTyre] && TYRE_CLASS_EFFECTS[defaultTyre]) {
@@ -490,10 +582,24 @@ function applyInstalledMods(baseStats, basePowerHP, baseWeightKG, carSlug) {
     dyn.weightKG = Math.max(dyn.weightKG, 500);
     dyn.cda = Math.max(dyn.cda, 0.35);
     dyn.cla = Math.max(dyn.cla, 0.0);
-    dyn.mu = clamp(dyn.mu + dyn.stability, 0.65, 2.05);
-    dyn.brake_eff = clamp(dyn.brake_eff, 0.65, 1.25);
+
+    dyn.chassis_flex = clamp(dyn.chassis_flex, 0.08, 1.00);
+    dyn.rigidity = clamp(dyn.rigidity, -0.03, 0.08);
+    dyn.stability = clamp(dyn.stability, -0.05, 0.08);
+
+    // Stability does not equal free grip. It only converts into a small amount of usable grip,
+    // and the conversion is much stronger on old flexible chassis than on modern track cars.
+    const stabilityGrip = dyn.stability * (0.12 + 0.30 * dyn.chassis_flex);
+    const rigidityGrip = dyn.rigidity * (0.03 + 0.09 * dyn.chassis_flex);
+    dyn.mu = clamp(dyn.mu + stabilityGrip + rigidityGrip, 0.65, 2.05);
+
+    // Rigidity can also improve brake/traction consistency slightly, but again mostly on flexible shells.
+    dyn.brake_eff += dyn.rigidity * dyn.chassis_flex * 0.025;
+    dyn.traction += dyn.rigidity * dyn.chassis_flex * 0.015;
+
+    dyn.brake_eff = clamp(dyn.brake_eff, 0.65, 1.18);
     dyn.drivetrain_loss = clamp(dyn.drivetrain_loss, 0.05, 0.25);
-    dyn.traction = clamp(dyn.traction, 0.45, 0.86);
+    dyn.traction = clamp(dyn.traction, 0.45, 0.84);
     dyn.powerband = clamp(dyn.powerband, -0.05, 0.12);
     dyn.acceleration_bias = clamp(dyn.acceleration_bias, -0.05, 0.08);
     dyn.top_speed_bias = clamp(dyn.top_speed_bias, -0.05, 0.05);
@@ -583,8 +689,8 @@ function simulateLap(dyn, trackSegments) {
     const constants = {
         g: 9.81,
         rho: 1.225,
-        rollingResistanceCoeff: 0.008,
-        brakingScalar: 0.90,
+        rollingResistanceCoeff: 0.010,
+        brakingScalar: 0.88,
         dx: 20
     };
 
@@ -661,6 +767,46 @@ function simulateLap(dyn, trackSegments) {
     };
 }
 
+function getReferenceStockLapSeconds(carSlug, trackSlug) {
+    const normalizedCar = normalizeCarSlug(carSlug);
+    return REFERENCE_STOCK_LAP_SECONDS[normalizedCar]?.[trackSlug] || null;
+}
+
+function buildFactoryStockMods(carSlug) {
+    const defaultTyre = getDefaultTyreForCar(carSlug);
+    if (!defaultTyre) return {};
+
+    return {
+        [defaultTyre]: {
+            hp: 0,
+            weight: TYRE_CATALOG_WEIGHTS[defaultTyre] || 0,
+            img: '',
+            mainCat: 'tyres',
+            factoryDefault: true
+        }
+    };
+}
+
+function calibrateAgainstReference(rawResult, stockResult, carSlug, trackSlug) {
+    const referenceSeconds = getReferenceStockLapSeconds(carSlug, trackSlug);
+
+    if (!referenceSeconds || !stockResult || !Number.isFinite(stockResult.totalTimeSeconds) || stockResult.totalTimeSeconds <= 0) {
+        return {
+            calibratedSeconds: rawResult.totalTimeSeconds,
+            referenceSeconds: null,
+            solverRatio: 1.0
+        };
+    }
+
+    const solverRatio = rawResult.totalTimeSeconds / stockResult.totalTimeSeconds;
+
+    return {
+        calibratedSeconds: referenceSeconds * solverRatio,
+        referenceSeconds,
+        solverRatio
+    };
+}
+
 function recalculatePerformance() {
     const timeDisplay = document.getElementById('lap-time-display');
     if (!timeDisplay) return;
@@ -683,7 +829,7 @@ function recalculatePerformance() {
         return;
     }
 
-    const dyn = applyInstalledMods(BASE_CAR_STATS[carSlug], basePowerHP, baseWeightKG, carSlug);
+    const dyn = applyInstalledMods(BASE_CAR_STATS[carSlug], basePowerHP, baseWeightKG, carSlug, installedMods);
     const result = simulateLap(dyn, TRACKS[trackSlug]);
 
     if (!result) {
@@ -691,9 +837,22 @@ function recalculatePerformance() {
         return;
     }
 
-    timeDisplay.innerText = secondsToTime(result.totalTimeSeconds);
+    const stockMods = buildFactoryStockMods(carSlug);
+    const stockDyn = applyInstalledMods(BASE_CAR_STATS[carSlug], basePowerHP, baseWeightKG, carSlug, stockMods);
+    const stockResult = simulateLap(stockDyn, TRACKS[trackSlug]);
+    const calibration = calibrateAgainstReference(result, stockResult, carSlug, trackSlug);
+
+    timeDisplay.innerText = secondsToTime(calibration.calibratedSeconds);
 
     // Useful for debugging/calibration in browser DevTools:
-    // window.REVLABS_LAST_SIM.avgSpeedKmh, topSpeedKmh, dyn, etc.
-    window.REVLABS_LAST_SIM = result;
+    // window.REVLABS_LAST_SIM.avgSpeedKmh, topSpeedKmh, dyn, rawSeconds, referenceSeconds, solverRatio, etc.
+    window.REVLABS_LAST_SIM = {
+        ...result,
+        rawSeconds: result.totalTimeSeconds,
+        totalTimeSeconds: calibration.calibratedSeconds,
+        stockSolverSeconds: stockResult?.totalTimeSeconds || null,
+        referenceSeconds: calibration.referenceSeconds,
+        solverRatio: calibration.solverRatio,
+        calibrated: Boolean(calibration.referenceSeconds)
+    };
 }

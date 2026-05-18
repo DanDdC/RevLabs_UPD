@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - RevLabs</title>
+    <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+</head>
+<body class="auth-body">
+    <div class="auth-bg" style="--fallback-poster: url('{% static 'img/bg/spa.jpg' %}');">
+        <video class="landing-video" autoplay muted loop playsinline preload="metadata" poster="{% static 'img/landing/hero-poster.jpg' %}">
+            <source src="{% static 'videos/landing/hero-track.mp4' %}" type="video/mp4">
+        </video>
+        <div class="landing-video-fallback"></div>
+        <div class="landing-video-overlay"></div>
+    </div>
+
+    <main class="auth-shell">
+        <a href="{% url 'home' %}" class="auth-brand">REV<span>LABS</span></a>
+        <section class="auth-card">
+            <p class="landing-kicker">ACCESS REQUIRED</p>
+            <h1>Login</h1>
+            <p class="auth-subtitle">Enter your account to access circuits, vehicles and the tuning dashboard.</p>
+
+            {% if form.non_field_errors %}
+                <div class="auth-error">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+                {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+                <label for="{{ form.username.id_for_label }}">Username</label>
+                {{ form.username }}
+                {{ form.username.errors }}
+
+                <label for="{{ form.password.id_for_label }}">Password</label>
+                {{ form.password }}
+                {{ form.password.errors }}
+
+                <button type="submit" class="landing-primary-btn auth-submit">ENTER PLATFORM</button>
+            </form>
+
+            <p class="auth-alt">No account yet? <a href="{% url 'signup' %}">Create one</a></p>
+        </section>
+    </main>
+</body>
+</html>
