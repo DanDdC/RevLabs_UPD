@@ -85,13 +85,26 @@ class Teste_01_FluxoSimulador(LiveServerTestCase):
             image_path="img/turbo.png"
         )
         
-        self.part_tyres = CarPart.objects.create(
-            category=self.cat_tyres,
-            name="Racing Slicks",
-            added_hp=0.0,
-            added_weight_kg=-5.0,
-            image_path="img/tyres.png"
-        )
+        self.tyres = []
+
+        tyre_data = [
+            ("Touring Tyres", 0.0, 0.0, "img/mods/touringtyres.png"),
+            ("Performance Tyres", 0.0, -1.0, "img/mods/perftyres.png"),
+            ("High-Performance Tyres", 0.0, -2.0, "img/mods/highperftyres.png"),
+            ("Semi-Slick Track Tyres", 0.0, -4.0, "img/mods/tracktyres.png"),
+            ("Racing Slicks", 0.0, -6.0, "img/mods/racingslicks.png"),
+        ]
+
+        for name, hp, weight, image in tyre_data:
+            self.tyres.append(
+                CarPart.objects.create(
+                    category=self.cat_tyres,
+                    name=name,
+                    added_hp=hp,
+                    added_weight_kg=weight,
+                    image_path=image
+                )
+            )
 
     def test_01_deve_carregar_selecao_de_pistas(self):
         """Teste 01: Visualização da página de seleção de pistas."""

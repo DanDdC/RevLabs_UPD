@@ -77,7 +77,13 @@
                 <div class="predicted-time-container">
                     <span class="time-label">ESTIMATED LAP TIME</span>
                     <div class="predicted-time">
-                        <span id="lap-time-display" data-track-length="{{ track.length_km }}" data-base-speed="{{ base_speed }}" data-base-power="{{ base_power }}" data-base-weight="{{ base_weight }}">{{ final_time }}</span>
+                        <span id="lap-time-display"
+                              data-track-slug="{{ track.slug_id }}"
+                              data-car-slug="{{ car.slug_id }}"
+                              data-track-length="{{ track.length_km }}"
+                              data-base-speed="{{ base_speed }}"
+                              data-base-power="{{ base_power }}"
+                              data-base-weight="{{ base_weight }}">{{ final_time }}</span>
                     </div>
                 </div>
 

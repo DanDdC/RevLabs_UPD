@@ -41,7 +41,7 @@ def car_selection(request):
     return render(request, 'simulator/car_selection.html', context)
 
 def dashboard(request):
-    car_id = request.GET.get('car', 'mercedes') 
+    car_id = request.GET.get('car', 'mercedes-amg') 
     track_id = request.GET.get('track', 'interlagos')
     
     try:
