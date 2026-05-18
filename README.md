@@ -112,4 +112,19 @@ Vídeo apresentando o protótipo e navegação entre as telas:
 </details>
 <details>
 <summary>Entrega 4 ✅</summary>
+
+[Print do Backlog do Jira](https://i.nuuls.com/I1wje.png)
+
+[Print das Issues/Bug tracker no Github](https://i.nuuls.com/u3Ax7.png)
+
+[Print do Quadro da Sprint 4 do Jira](https://i.nuuls.com/6NWrj.png)
+
+[Relatório de Programação em Par]()
+
+[Testes de Sistema (E2E) Automatizados]()
+
+[Testes CI/CD Automatizados]()
+
+[Como montar seu ambiente virtual]()
+
 </details>
