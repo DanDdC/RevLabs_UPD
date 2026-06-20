@@ -78,43 +78,54 @@
                     </div>
                 </section>
 
-                <div class="predicted-time-container">
-                    <span class="time-label">
-                        LAP TIME
-                        {% if has_telemetry %}
-                        <span class="telem-badge">TELEMETRY</span>
-                        {% endif %}
-                    </span>
-                    <div class="predicted-time">
-                         <span id="lap-time-display"
-                              class="{% if not has_telemetry %}no-telem{% endif %}"
-                              data-track-slug="{{ track.slug_id }}"
-                              data-car-slug="{{ car.slug_id }}"
-                              data-track-length="{{ track.length_km }}"
-                              data-base-speed="{{ base_speed }}"
-                              data-base-power="{{ base_power }}"
-                              data-base-weight="{{ base_weight }}"
-                              data-has-telemetry="{{ has_telemetry|lower }}"
-                              data-best-lap-seconds="{{ best_lap_seconds }}"
-                              data-best-projected-seconds="{{ best_projected_seconds|default:'' }}"
-                              data-tuning-base-seconds="{{ tuning_base_seconds|default:'' }}"
-                              data-telemetry-laps='{{ telemetry_laps|safe }}'>{{ final_time }}</span>
-                    </div>
-                    {% if has_telemetry %}
-                    <div class="telemetry-info">
-                        <span class="telem-stats">
-                            {% if best_projected_seconds %}
-                            <span class="projected-badge">PROJECTED</span>
+                <div class="time-split" id="time-split">
+                    <div class="time-split-left" id="time-split-left">
+                        <span class="time-label">
+                            LAP TIME
+                            {% if has_telemetry %}
+                            <span class="telem-badge">TELEMETRY</span>
                             {% endif %}
-                            Best of {{ telemetry_count }} telemetry laps
                         </span>
-                        <button id="btn-view-laps" class="btn-telemetry">VIEW LAPS</button>
+                        <div class="time-left-body" id="time-left-body">
+                            <div class="import-actions">
+                                <button id="btn-import-telemetry" class="btn-import-telemetry">IMPORT TELEMETRY</button>
+                                <button id="btn-import-from-file" class="btn-import-telemetry">IMPORT FROM FILE...</button>
+                                <input type="file" id="import-file-input" accept=".json,.db" hidden>
+                            </div>
+                            <div class="time-column">
+                                <div class="predicted-time">
+                                     <span id="lap-time-display"
+                                          class="{% if not has_telemetry %}no-telem{% endif %}"
+                                          data-track-slug="{{ track.slug_id }}"
+                                          data-car-slug="{{ car.slug_id }}"
+                                          data-track-length="{{ track.length_km }}"
+                                          data-base-speed="{{ base_speed }}"
+                                          data-base-power="{{ base_power }}"
+                                          data-base-weight="{{ base_weight }}"
+                                          data-has-telemetry="{{ has_telemetry|lower }}"
+                                          data-best-lap-seconds="{{ best_lap_seconds }}"
+                                          data-best-projected-seconds="{{ best_projected_seconds|default:'' }}"
+                                          data-tuning-base-seconds="{{ tuning_base_seconds|default:'' }}"
+                                          data-telemetry-laps='{{ telemetry_laps|safe }}'>{{ final_time }}</span>
+                                </div>
+                                <span id="tyre-warning" class="tyre-warning" style="display:none">SELECT A TYRE</span>
+                                {% if has_telemetry %}
+                                <div class="telemetry-info">
+                                    <span class="telem-stats">
+                                        Best of {{ telemetry_count }} telemetry laps
+                                    </span>
+                                    <button id="btn-view-laps" class="btn-telemetry">VIEW LAPS</button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
-                    {% endif %}
-                    <div class="import-actions">
-                        <button id="btn-import-telemetry" class="btn-import-telemetry">IMPORT TELEMETRY</button>
-                        <button id="btn-import-from-file" class="btn-import-telemetry">IMPORT FROM FILE...</button>
-                        <input type="file" id="import-file-input" accept=".json,.db" hidden>
+                    <div class="time-split-divider" id="time-split-divider"></div>
+                    <div class="time-split-right" id="time-split-right">
+                        <span class="time-label projected-label">PROJECTED</span>
+                        <div class="predicted-time">
+                            <span id="predicted-time-display">--:--.---</span>
+                        </div>
                     </div>
                 </div>
 
@@ -128,6 +139,7 @@
 
     <script id="part-adjustments-data" type="application/json">{{ part_adjustments|safe }}</script>
     <script id="preset-mods-data" type="application/json">{{ preset_mods|safe }}</script>
+    <script id="mod-impacts-data" type="application/json">{{ mod_impacts|safe }}</script>
 
     <dialog id="mod-modal" class="mod-modal">
         <div class="modal-content-area">

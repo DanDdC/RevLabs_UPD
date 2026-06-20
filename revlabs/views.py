@@ -8,6 +8,7 @@ from django.urls import reverse_lazy
 
 from .forms import RevLabsAuthenticationForm, RevLabsUserCreationForm
 from .models import Car, Track, PartCategory, TelemetryLap, CarPart, PartAdjustment
+from .telemetry_profile import compute_profile, predict_impact
 
 
 def time_to_seconds(time_str):
@@ -203,6 +204,16 @@ def dashboard(request):
         adj_list.sort(key=lambda x: x['order'])
         part_adjustments[p.name] = adj_list
 
+    # Predictive mod impact analysis
+    profile = compute_profile(telemetry_laps) if has_telemetry else None
+    mod_impacts = {}
+    if profile:
+        all_parts = CarPart.objects.all()
+        for p in all_parts:
+            sec = predict_impact(p.name, selected_car, profile)
+            if sec is not None:
+                mod_impacts[p.name] = round(sec, 3)
+
     context = {
         'car': selected_car,
         'track': selected_track,
@@ -221,6 +232,7 @@ def dashboard(request):
         'tuning_base_seconds': tuning_base,
         'part_adjustments': json.dumps(part_adjustments),
         'preset_mods': json.dumps(_get_preset_mods(selected_car, selected_track)),
+        'mod_impacts': json.dumps(mod_impacts),
     }
     return render(request, 'simulator/dashboard.html', context)
 

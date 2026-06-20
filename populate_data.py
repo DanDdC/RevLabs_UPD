@@ -12,7 +12,6 @@ Track.objects.all().delete()
 cars = [
     Car(slug_id='vw-fusca', name='VW Fusca 1300', base_avg_speed_kmh=108.0, power_hp=44, weight_kg=820, image_path='img/cars/fusca.png', car_code=0),
 
-    Car(slug_id='ferrari-458', name='Ferrari 458 Italia', base_avg_speed_kmh=165.0, power_hp=570, weight_kg=1380, image_path='img/cars/ferrari-458.png', car_code=0),
     Car(slug_id='porsche-911', name='Porsche 911 GT3 RS (992)', base_avg_speed_kmh=183.3, power_hp=525, weight_kg=1450, image_path='img/cars/porsche-911.png', car_code=3539),
     Car(slug_id='mercedes-amg', name='Mercedes-AMG GT Black Series \'20', base_avg_speed_kmh=186.0, power_hp=730, weight_kg=1540, image_path='img/cars/mercedes-amg.png', car_code=0),
 ]

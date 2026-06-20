@@ -1,6 +1,8 @@
 let installedMods = {};
 let partAdjustmentsData = {};
 let currentTuningPart = null;
+let _userHasTouchedMods = false;
+let _presetBaselineMods = null;
 
 // Keep this map synchronized with populateparts.py names.
 const incompatibilityMap = {
@@ -82,11 +84,7 @@ const BASE_CAR_STATS = {
     // Old, flexible road shells benefit more; modern track-focused cars benefit very little.
     'vw-fusca':     { cda: 0.85, cla: 0.00, mu: 0.84, brake_eff: 0.78, drivetrain_loss: 0.16, traction: 0.55, chassis_flex: 0.95 },
 
-    // Ferrari is calibrated as a 2009 road supercar on high-performance road tyres.
-    // It has strong power/top speed, but far less aero and transient stability than the newer track specials.
-    'ferrari-458':  { cda: 0.68, cla: 0.10, mu: 1.08, brake_eff: 0.90, drivetrain_loss: 0.12, traction: 0.60, chassis_flex: 0.30 },
-
-    // Modern track-focused road cars. Their factory tyres are handled by DEFAULT_TYRE_BY_CAR.
+    // Track-focused road cars. Their factory tyres are handled by DEFAULT_TYRE_BY_CAR.
     'porsche-911':  { cda: 0.78, cla: 0.70, mu: 1.34, brake_eff: 1.02, drivetrain_loss: 0.10, traction: 0.72, chassis_flex: 0.12 },
     'mercedes-amg': { cda: 0.78, cla: 0.50, mu: 1.30, brake_eff: 0.97, drivetrain_loss: 0.12, traction: 0.68, chassis_flex: 0.16 }
 };
@@ -95,13 +93,9 @@ const BASE_CAR_STATS = {
 const CAR_SLUG_ALIASES = {
     'porsche': 'porsche-911',
     'porsche-911': 'porsche-911',
-    'ferrari': 'ferrari-458',
-    'ferrari-458': 'ferrari-458',
     'mercedes': 'mercedes-amg',
     'amg': 'mercedes-amg',
     'mercedes-amg': 'mercedes-amg',
-    'fusca': 'vw-fusca',
-    'vw-fusca': 'vw-fusca',
     'fusca': 'vw-fusca',
     'vw-fusca': 'vw-fusca'
 };
@@ -115,7 +109,6 @@ function normalizeCarSlug(slug) {
 const DEFAULT_TYRE_BY_CAR = {
     'vw-fusca': 'Touring Tyres',
 
-    'ferrari-458': 'High-Performance Tyres',
     'porsche-911': 'Sports Medium Tyres',
     'mercedes-amg': 'Semi-Slick Track Tyres'
 };
@@ -167,15 +160,6 @@ const REFERENCE_STOCK_LAP_SECONDS = {
         spa: 148.900,
         suzuka: 132.000,
         interlagos: 99.800
-    },
-    'ferrari-458': {
-        // Older supercar reference: Nürburgring real-world lap plus Assetto Corsa/TrackTitan ranges.
-        nurburgring: 452.900,
-        monza: 120.600,
-        silverstone: 137.500,
-        spa: 158.000,
-        suzuka: 141.000,
-        interlagos: 109.000
     },
     'vw-fusca': {
         // Low-confidence class: anchored to a Gran Turismo sanity check around Interlagos.
@@ -617,6 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         installedMods[partName] = { hp, weight, img, mainCat, factoryDefault: false };
+        _userHasTouchedMods = true;
         renderInstalledMods();
         if (modal) modal.close();
     }
@@ -785,6 +770,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Load mod impact predictions and annotate part items
+    const impactScript = document.getElementById('mod-impacts-data');
+    if (impactScript) {
+        try {
+            const modImpacts = JSON.parse(impactScript.textContent);
+            parts.forEach(part => {
+                const name = part.getAttribute('data-name');
+                const sec = modImpacts[name];
+                if (sec !== undefined) {
+                    part.setAttribute('data-impact-seconds', sec);
+                    const lab = document.createElement('span');
+                    lab.className = 'mod-impact-label';
+                    lab.textContent = `−${sec.toFixed(3)}s`;
+                    part.appendChild(lab);
+                }
+            });
+        } catch (e) {
+            console.warn('Failed to parse mod-impacts-data:', e);
+        }
+    }
+
     // Load part adjustments data
     const adjScript = document.getElementById('part-adjustments-data');
     if (adjScript) {
@@ -801,19 +807,28 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const presetMods = JSON.parse(presetScript.textContent);
             if (Array.isArray(presetMods) && presetMods.length > 0) {
-                presetMods.forEach(item => {
-                    const modName = typeof item === 'object' ? item.name : item;
-                    const imgPath = typeof item === 'object' ? item.image_path : `img/mods/${modName.toLowerCase().replace(/\s+/g, '')}.png`;
-                    const effect = MOD_PHYSICS_MAP[modName];
-                    if (effect && !installedMods[modName]) {
-                        installedMods[modName] = {
-                            hp: effect.hp || 0,
-                            weight: effect.weight || 0,
-                            img: imgPath,
-                            mainCat: '',
-                            factoryDefault: false
-                        };
+                const presetNames = presetMods.map(item => typeof item === 'object' ? item.name : item);
+                // Store baseline for recalculation
+                const timeDisplay = document.getElementById('lap-time-display');
+                const carSlug = timeDisplay ? normalizeCarSlug(timeDisplay.dataset.carSlug) : '';
+                _presetBaselineMods = buildPresetBaseline(carSlug, presetNames);
+                // Install mods for display
+                presetNames.forEach(modName => {
+                    if (installedMods[modName]) return;
+                    const isTyre = TYRE_CLASS_EFFECTS[modName] !== undefined;
+                    const item = presetMods.find(i => (typeof i === 'object' ? i.name : i) === modName);
+                    const imgPath = typeof item === 'object' ? item.image_path : '';
+                    if (isTyre) {
+                        const existingTyre = Object.keys(installedMods).find(k => installedMods[k].mainCat === 'tyres');
+                        if (existingTyre) delete installedMods[existingTyre];
                     }
+                    installedMods[modName] = {
+                        hp: 0,
+                        weight: 0,
+                        img: imgPath,
+                        mainCat: isTyre ? 'tyres' : '',
+                        factoryDefault: false
+                    };
                 });
                 renderInstalledMods();
             }
@@ -886,6 +901,7 @@ function renderInstalledMods() {
 
 window.removeModification = function(partName) {
     delete installedMods[partName];
+    _userHasTouchedMods = true;
     renderInstalledMods();
 };
 
@@ -1208,21 +1224,85 @@ function calibrateAgainstReference(rawResult, stockResult, carSlug, trackSlug) {
     };
 }
 
+function buildPresetBaseline(carSlug, presetModNames) {
+    const baseline = {};
+    const defaultTyre = getDefaultTyreForCar(carSlug);
+    if (defaultTyre) {
+        baseline[defaultTyre] = {
+            hp: 0, weight: 0, img: '',
+            mainCat: 'tyres', factoryDefault: true
+        };
+    }
+    presetModNames.forEach(name => {
+        const isTyre = TYRE_CLASS_EFFECTS[name] !== undefined;
+        if (isTyre && defaultTyre) {
+            delete baseline[defaultTyre];
+        }
+        const effect = MOD_PHYSICS_MAP[name];
+        baseline[name] = {
+            hp: effect ? (effect.hp || 0) : 0,
+            weight: effect ? (effect.weight || 0) : 0,
+            img: '',
+            mainCat: isTyre ? 'tyres' : '',
+            factoryDefault: true
+        };
+    });
+    return baseline;
+}
+
 function recalculatePerformance() {
     const timeDisplay = document.getElementById('lap-time-display');
+    const predictedDisplay = document.getElementById('predicted-time-display');
+    const timeSplit = document.getElementById('time-split');
+    const tyreWarning = document.getElementById('tyre-warning');
     if (!timeDisplay) return;
 
     const hasTelemetry = timeDisplay.dataset.hasTelemetry === 'true';
     const tuningBase = parseFloat(timeDisplay.dataset.tuningBaseSeconds);
     const bestLapSeconds = parseFloat(timeDisplay.dataset.bestLapSeconds);
     const baseRef = tuningBase && tuningBase > 0 ? tuningBase : (bestLapSeconds || 0);
+    const hasTyre = !!getCurrentTyreName();
+
+    if (!hasTyre) {
+        timeDisplay.innerText = "--:--.---";
+        if (predictedDisplay) predictedDisplay.innerText = "--:--.---";
+        if (tyreWarning) tyreWarning.style.display = 'block';
+        if (timeSplit) timeSplit.classList.remove('has-mods');
+        return;
+    }
+    if (tyreWarning) tyreWarning.style.display = 'none';
 
     if (!hasTelemetry || !baseRef || baseRef <= 0) {
         timeDisplay.innerText = "--:--.---";
+        if (predictedDisplay) predictedDisplay.innerText = "--:--.---";
+        if (timeSplit) timeSplit.classList.remove('has-mods');
         return;
     }
 
     timeDisplay.innerText = secondsToTime(baseRef);
+
+    const hasNonStockMods = Object.values(installedMods).some(m => !m.factoryDefault);
+
+    if (hasNonStockMods && predictedDisplay && timeSplit) {
+        const { carSlug, trackSlug, basePowerHP, baseWeightKG } = getSimulationContext(timeDisplay);
+        if (getCurrentTyreName() && BASE_CAR_STATS[carSlug] && TRACKS[trackSlug]) {
+            const currentDyn = applyInstalledMods(BASE_CAR_STATS[carSlug], basePowerHP, baseWeightKG, carSlug, installedMods);
+            const baselineMods = _presetBaselineMods || buildFactoryStockMods(carSlug);
+            const baselineDyn = applyInstalledMods(BASE_CAR_STATS[carSlug], basePowerHP, baseWeightKG, carSlug, baselineMods);
+            const baselineResult = simulateLap(baselineDyn, TRACKS[trackSlug]);
+            const moddedResult = simulateLap(currentDyn, TRACKS[trackSlug]);
+            if (baselineResult && moddedResult && baselineResult.totalTimeSeconds > 0) {
+                const modRatio = moddedResult.totalTimeSeconds / baselineResult.totalTimeSeconds;
+                const calibratedTime = baseRef * modRatio;
+                predictedDisplay.innerText = secondsToTime(calibratedTime);
+                timeSplit.classList.add('has-mods');
+                window.REVLABS_LAST_SIM = { baseTelemetry: baseRef, modRatio, calibratedTime };
+                return;
+            }
+        }
+    }
+
+    if (timeSplit) timeSplit.classList.remove('has-mods');
 }
 
 // ==========================================================================
@@ -1302,7 +1382,7 @@ window.applyTuningValues = function() {
     }
     installedMods[currentTuningPart].tuning = { ...window._tuneTempValues[currentTuningPart] };
 
-    // Mark any modified values for display
+    _userHasTouchedMods = true;
     window._tuneTempValues = {};
     currentTuningPart = null;
 

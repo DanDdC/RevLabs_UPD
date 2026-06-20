@@ -80,7 +80,7 @@ catalogo_pecas = [
     # ===== SPORTS TIER =====
     (cats['ECU'], 'Sports Computer', 15, 0, 'img/mods/ecu.png', 'sports'),
     (cats['Air Filters'], 'Sports Air Filter', 5, 0, 'img/mods/filtro_ar.png', 'sports'),
-    (cats['Exhaust'], 'Sports Muffler', 10, -2, 'img/mods/filtro_ar.png', 'sports'),
+    (cats['Exhaust'], 'Sports Muffler', 10, -2, 'img/mods/exhaust.png', 'sports'),
     (cats['Brake Pads'], 'Sports Brake Pads', 0, 0, 'img/mods/sportscalipers.png', 'sports'),
     (cats['Weight Reduction'], 'Stage 1 Weight Reduction', 0, -60, 'img/mods/weight-reduction.png', 'sports'),
     (cats['Coilover'], 'Street Suspension', 0, -2, 'img/mods/streetcoilovers.png', 'sports'),
@@ -112,7 +112,7 @@ catalogo_pecas = [
     (cats['Weight Reduction'], 'Stage 3 Weight Reduction', 0, -50, 'img/mods/weight-reduction.png', 'semi_racing'),
     (cats['Chassis Reinforcement'], 'Increase Body Rigidity', 0, 35, 'img/mods/rollcage.png', 'semi_racing'),
     (cats['ECU'], 'Fully Customizable Computer', 25, 0, 'img/mods/ecu.png', 'semi_racing'),
-    (cats['Exhaust'], 'Semi-Racing Muffler', 18, -3, 'img/mods/filtro_ar.png', 'semi_racing'),
+    (cats['Exhaust'], 'Semi-Racing Muffler', 18, -3, 'img/mods/exhaust.png', 'semi_racing'),
     (cats['Turbochargers'], 'Low-RPM Turbocharger', 60, 15, 'img/mods/turbo-icon.png', 'semi_racing'),
     (cats['Turbochargers'], 'Medium-RPM Turbocharger', 85, 18, 'img/mods/turbo-icon.png', 'semi_racing'),
     (cats['Turbochargers'], 'High-RPM Turbocharger', 110, 22, 'img/mods/highturbo.png', 'semi_racing'),
@@ -132,8 +132,8 @@ catalogo_pecas = [
     (cats['Superchargers'], 'High-End Torque Supercharger', 95, 30, 'img/mods/highsupercharger.png', 'racing'),
     (cats['Intercooler'], 'Racing Intercooler', 10, 5, 'img/mods/turbo-icon.png', 'racing'),
     (cats['Air Filters'], 'Racing Air Filter', 8, 0, 'img/mods/filtro_ar.png', 'racing'),
-    (cats['Exhaust'], 'Racing Muffler', 22, -4, 'img/mods/filtro_ar.png', 'racing'),
-    (cats['Exhaust'], 'Racing Exhaust Manifold', 12, -2, 'img/mods/filtro_ar.png', 'racing'),
+    (cats['Exhaust'], 'Racing Muffler', 22, -4, 'img/mods/exhaust.png', 'racing'),
+    (cats['Exhaust'], 'Racing Exhaust Manifold', 12, -2, 'img/mods/exhaust.png', 'racing'),
     (cats['Brake Pads'], 'Racing Brake Pads', 0, 0, 'img/mods/calipers.png', 'racing'),
     (cats['Brake Discs'], 'Racing Brake Kit (Slotted Discs)', 0, 2, 'img/mods/rotors.png', 'racing'),
     (cats['Brake Discs'], 'Racing Brake Kit (Drilled Discs)', 0, 1, 'img/mods/discs.png', 'racing'),
@@ -197,7 +197,7 @@ for categoria, nome, hp, peso, img, tier in catalogo_pecas:
 print("Atualizando velocidades medias dos carros...")
 car_calibrations = {
     'vw-fusca': 108.0,
-    'ferrari-458': 165.0,
+
     'porsche-911': 183.3,
     'mercedes-amg': 186.0
 }
