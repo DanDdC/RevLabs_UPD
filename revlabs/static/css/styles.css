@@ -1254,7 +1254,9 @@ body {
 /* Import telemetry action */
 .import-actions {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
     margin-top: 8px;
 }
 
@@ -1270,6 +1272,8 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
     text-transform: uppercase;
+    white-space: nowrap;
+    width: 180px;
 }
 
 .btn-import-telemetry:hover {
