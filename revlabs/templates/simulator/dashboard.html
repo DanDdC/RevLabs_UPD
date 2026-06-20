@@ -111,6 +111,11 @@
                         <button id="btn-view-laps" class="btn-telemetry">VIEW LAPS</button>
                     </div>
                     {% endif %}
+                    <div class="import-actions">
+                        <button id="btn-import-telemetry" class="btn-import-telemetry">IMPORT TELEMETRY</button>
+                        <button id="btn-import-from-file" class="btn-import-telemetry" style="margin-top:6px;font-size:0.75rem">IMPORT FROM FILE...</button>
+                        <input type="file" id="import-file-input" accept=".json,.db" hidden>
+                    </div>
                 </div>
 
                 <section class="dynamic-mod-container">

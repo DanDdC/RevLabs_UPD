@@ -731,6 +731,61 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Import Telemetry from TelemetryIQ database
+    const btnImport = document.getElementById('btn-import-telemetry');
+    if (btnImport) {
+        btnImport.addEventListener('click', async () => {
+            btnImport.disabled = true;
+            btnImport.textContent = 'IMPORTING...';
+            try {
+                const resp = await fetch('/api/import-telemetry/');
+                const data = await resp.json();
+                if (data.status === 'ok') {
+                    showSystemModal('TELEMETRY IMPORT', `Imported ${data.imported} laps. ${data.skipped} skipped. ${data.trimmed} trimmed.`, false);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showSystemModal('IMPORT ERROR', data.message || 'Unknown error');
+                }
+            } catch (e) {
+                showSystemModal('IMPORT ERROR', e.message);
+            } finally {
+                btnImport.disabled = false;
+                btnImport.textContent = 'IMPORT TELEMETRY';
+            }
+        });
+    }
+
+    // Import Telemetry from uploaded file
+    const btnImportFile = document.getElementById('btn-import-from-file');
+    const fileInput = document.getElementById('import-file-input');
+    if (btnImportFile && fileInput) {
+        btnImportFile.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', async () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+            btnImportFile.disabled = true;
+            btnImportFile.textContent = 'IMPORTING...';
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                const resp = await fetch('/api/import-telemetry/', { method: 'POST', body: formData });
+                const data = await resp.json();
+                if (data.status === 'ok') {
+                    showSystemModal('IMPORT COMPLETE', `Imported ${data.imported} laps from ${file.name}. ${data.skipped} skipped. ${data.trimmed} trimmed.`, false);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showSystemModal('IMPORT ERROR', data.message || 'Unknown error');
+                }
+            } catch (e) {
+                showSystemModal('IMPORT ERROR', e.message);
+            } finally {
+                btnImportFile.disabled = false;
+                btnImportFile.textContent = 'IMPORT FROM FILE...';
+                fileInput.value = '';
+            }
+        });
+    }
+
     // Load part adjustments data
     const adjScript = document.getElementById('part-adjustments-data');
     if (adjScript) {

@@ -221,3 +221,46 @@ def api_telemetry_laps(request):
         for l in laps
     ]
     return JsonResponse({'laps': data})
+
+
+@login_required
+def api_import_telemetry(request):
+    """
+    Import telemetry laps.
+    - GET:  import from TelemetryIQ SQLite database (uses db_path param or default)
+    - POST: import from uploaded JSON export file (multipart form, field name: 'file')
+    """
+    import tempfile, io
+
+    if request.method == 'POST' and request.FILES.get('file'):
+        from revlabs.telemetry_import import run_import_from_json
+        uploaded = request.FILES['file']
+        suffix = '.json'
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            for chunk in uploaded.chunks():
+                tmp.write(chunk)
+            tmp_path = tmp.name
+        try:
+            buf = io.StringIO()
+            result = run_import_from_json(tmp_path, print_func=lambda msg: buf.write(msg + '\n'))
+            result['log'] = buf.getvalue()
+        finally:
+            import os
+            os.unlink(tmp_path)
+
+        if result.get('error'):
+            return JsonResponse({'status': 'error', 'message': result['error'], 'log': result['log']}, status=400)
+        return JsonResponse({'status': 'ok', **result})
+
+    from revlabs.telemetry_import import run_import
+
+    db_path = request.GET.get('db_path') or r'..\TelemetryIQ\telemetry.db'
+
+    buf = io.StringIO()
+    result = run_import(db_path, print_func=lambda msg: buf.write(msg + '\n'))
+    result['log'] = buf.getvalue()
+
+    if result.get('error'):
+        return JsonResponse({'status': 'error', 'message': result['error'], 'log': result['log']}, status=400)
+
+    return JsonResponse({'status': 'ok', **result})
