@@ -1,15 +1,69 @@
 let installedMods = {};
+let partAdjustmentsData = {};
+let currentTuningPart = null;
 
 // Keep this map synchronized with populateparts.py names.
 const incompatibilityMap = {
-    "Low-RPM Turbocharger": ["High-RPM Turbocharger", "Supercharger (Low-Torque)", "Supercharger (High-Torque)"],
-    "High-RPM Turbocharger": ["Low-RPM Turbocharger", "Supercharger (Low-Torque)", "Supercharger (High-Torque)"],
-    "Supercharger (Low-Torque)": ["Low-RPM Turbocharger", "High-RPM Turbocharger", "Supercharger (High-Torque)"],
-    "Supercharger (High-Torque)": ["Low-RPM Turbocharger", "High-RPM Turbocharger", "Supercharger (Low-Torque)"],
+    // Turbos — mutually exclusive with each other and with superchargers
+    "Low-RPM Turbocharger": ["Medium-RPM Turbocharger", "High-RPM Turbocharger", "Ultra-High RPM Turbocharger", "Low-End Torque Supercharger", "High-End Torque Supercharger", "High-RPM S Supercharger"],
+    "Medium-RPM Turbocharger": ["Low-RPM Turbocharger", "High-RPM Turbocharger", "Ultra-High RPM Turbocharger", "Low-End Torque Supercharger", "High-End Torque Supercharger", "High-RPM S Supercharger"],
+    "High-RPM Turbocharger": ["Low-RPM Turbocharger", "Medium-RPM Turbocharger", "Ultra-High RPM Turbocharger", "Low-End Torque Supercharger", "High-End Torque Supercharger", "High-RPM S Supercharger"],
+    "Ultra-High RPM Turbocharger": ["Low-RPM Turbocharger", "Medium-RPM Turbocharger", "High-RPM Turbocharger", "Low-End Torque Supercharger", "High-End Torque Supercharger", "High-RPM S Supercharger"],
 
-    "Street Coilovers": ["Fully Adjustable Race Coilovers"],
-    "Fully Adjustable Race Coilovers": ["Street Coilovers"],
+    // Superchargers — mutually exclusive with each other and with turbos
+    "Low-End Torque Supercharger": ["High-End Torque Supercharger", "High-RPM S Supercharger", "Low-RPM Turbocharger", "Medium-RPM Turbocharger", "High-RPM Turbocharger", "Ultra-High RPM Turbocharger"],
+    "High-End Torque Supercharger": ["Low-End Torque Supercharger", "High-RPM S Supercharger", "Low-RPM Turbocharger", "Medium-RPM Turbocharger", "High-RPM Turbocharger", "Ultra-High RPM Turbocharger"],
+    "High-RPM S Supercharger": ["Low-End Torque Supercharger", "High-End Torque Supercharger", "Low-RPM Turbocharger", "Medium-RPM Turbocharger", "High-RPM Turbocharger", "Ultra-High RPM Turbocharger"],
 
+    // Suspension — only one type at a time
+    "Street Suspension": ["Sports Suspension", "Height-Adjustable Sports Suspension", "Fully Customizable Suspension"],
+    "Sports Suspension": ["Street Suspension", "Height-Adjustable Sports Suspension", "Fully Customizable Suspension"],
+    "Height-Adjustable Sports Suspension": ["Street Suspension", "Sports Suspension", "Fully Customizable Suspension"],
+    "Fully Customizable Suspension": ["Street Suspension", "Sports Suspension", "Height-Adjustable Sports Suspension"],
+
+    // Brake kits — only one set
+    "Sports Brake Kit": ["Performance Brake Kit", "Racing Brake Kit (Slotted Discs)", "Racing Brake Kit (Drilled Discs)", "Carbon Ceramic Brake Kit"],
+    "Performance Brake Kit": ["Sports Brake Kit", "Racing Brake Kit (Slotted Discs)", "Racing Brake Kit (Drilled Discs)", "Carbon Ceramic Brake Kit"],
+    "Racing Brake Kit (Slotted Discs)": ["Sports Brake Kit", "Performance Brake Kit", "Racing Brake Kit (Drilled Discs)", "Carbon Ceramic Brake Kit"],
+    "Racing Brake Kit (Drilled Discs)": ["Sports Brake Kit", "Performance Brake Kit", "Racing Brake Kit (Slotted Discs)", "Carbon Ceramic Brake Kit"],
+    "Carbon Ceramic Brake Kit": ["Sports Brake Kit", "Performance Brake Kit", "Racing Brake Kit (Slotted Discs)", "Racing Brake Kit (Drilled Discs)"],
+
+    // Clutch — only one
+    "Sports Clutch & Flywheel": ["Semi-Racing Clutch & Flywheel", "Racing Clutch & Flywheel"],
+    "Semi-Racing Clutch & Flywheel": ["Sports Clutch & Flywheel", "Racing Clutch & Flywheel"],
+    "Racing Clutch & Flywheel": ["Sports Clutch & Flywheel", "Semi-Racing Clutch & Flywheel"],
+
+    // LSD — only one
+    "One-Way LSD": ["Two-Way LSD", "Fully Customizable LSD", "Active LSD Controller"],
+    "Two-Way LSD": ["One-Way LSD", "Fully Customizable LSD", "Active LSD Controller"],
+    "Fully Customizable LSD": ["One-Way LSD", "Two-Way LSD", "Active LSD Controller"],
+    "Active LSD Controller": ["One-Way LSD", "Two-Way LSD", "Fully Customizable LSD"],
+
+    // Transmission
+    "Close-Ratio Transmission (Low)": ["Close-Ratio Transmission (High)", "Fully Customizable Manual Transmission", "Fully Customizable Racing Transmission"],
+    "Close-Ratio Transmission (High)": ["Close-Ratio Transmission (Low)", "Fully Customizable Manual Transmission", "Fully Customizable Racing Transmission"],
+    "Fully Customizable Manual Transmission": ["Close-Ratio Transmission (Low)", "Close-Ratio Transmission (High)", "Fully Customizable Racing Transmission"],
+    "Fully Customizable Racing Transmission": ["Close-Ratio Transmission (Low)", "Close-Ratio Transmission (High)", "Fully Customizable Manual Transmission"],
+
+    // Weight reduction — cumulative, not mutually exclusive, but only one of each stage
+    // Actually stages can stack; no conflicts needed
+
+    // ECU — conflicts between fixed and custom
+    "Sports Computer": ["Fully Customizable Computer"],
+    "Fully Customizable Computer": ["Sports Computer"],
+
+    // Intercooler — only one
+    "Sports Intercooler": ["Racing Intercooler"],
+    "Racing Intercooler": ["Sports Intercooler"],
+
+    // Air filter
+    "Sports Air Filter": ["Racing Air Filter"],
+    "Racing Air Filter": ["Sports Air Filter"],
+
+    // Exhaust
+    "Sports Muffler": ["Semi-Racing Muffler", "Racing Muffler"],
+    "Semi-Racing Muffler": ["Sports Muffler", "Racing Muffler"],
+    "Racing Muffler": ["Sports Muffler", "Semi-Racing Muffler"],
 };
 
 // ==========================================================================
@@ -27,8 +81,6 @@ const BASE_CAR_STATS = {
     // chassis_flex expresses how much the platform benefits from rigidity/bracing mods.
     // Old, flexible road shells benefit more; modern track-focused cars benefit very little.
     'vw-fusca':     { cda: 0.85, cla: 0.00, mu: 0.84, brake_eff: 0.78, drivetrain_loss: 0.16, traction: 0.55, chassis_flex: 0.95 },
-    'vw-brasilia':  { cda: 0.82, cla: 0.00, mu: 0.86, brake_eff: 0.80, drivetrain_loss: 0.16, traction: 0.56, chassis_flex: 0.88 },
-    'vw-parati':    { cda: 0.75, cla: 0.02, mu: 0.92, brake_eff: 0.86, drivetrain_loss: 0.15, traction: 0.58, chassis_flex: 0.62 },
 
     // Ferrari is calibrated as a 2009 road supercar on high-performance road tyres.
     // It has strong power/top speed, but far less aero and transient stability than the newer track specials.
@@ -50,10 +102,8 @@ const CAR_SLUG_ALIASES = {
     'mercedes-amg': 'mercedes-amg',
     'fusca': 'vw-fusca',
     'vw-fusca': 'vw-fusca',
-    'brasilia': 'vw-brasilia',
-    'vw-brasilia': 'vw-brasilia',
-    'parati': 'vw-parati',
-    'vw-parati': 'vw-parati'
+    'fusca': 'vw-fusca',
+    'vw-fusca': 'vw-fusca'
 };
 
 function normalizeCarSlug(slug) {
@@ -64,10 +114,9 @@ function normalizeCarSlug(slug) {
 // The baseline lap time therefore means: stock car + this factory/default tyre.
 const DEFAULT_TYRE_BY_CAR = {
     'vw-fusca': 'Touring Tyres',
-    'vw-brasilia': 'Touring Tyres',
-    'vw-parati': 'Performance Tyres',
+
     'ferrari-458': 'High-Performance Tyres',
-    'porsche-911': 'Semi-Slick Track Tyres',
+    'porsche-911': 'Sports Medium Tyres',
     'mercedes-amg': 'Semi-Slick Track Tyres'
 };
 
@@ -77,6 +126,7 @@ const DEFAULT_TYRE_BY_CAR = {
 const TYRE_CLASS_EFFECTS = {
     'Touring Tyres': { mu: 0.000, traction: 0.000, cda: 0.000 },
     'Performance Tyres': { mu: 0.055, traction: 0.018, cda: 0.000 },
+    'Sports Medium Tyres': { mu: 0.080, traction: 0.022, cda: 0.000 },
     'High-Performance Tyres': { mu: 0.105, traction: 0.028, cda: 0.000 },
     'Semi-Slick Track Tyres': { mu: 0.165, traction: 0.040, cda: 0.002 },
     'Racing Slicks': { mu: 0.275, traction: 0.055, cda: 0.006 }
@@ -87,6 +137,7 @@ const TYRE_CLASS_EFFECTS = {
 const TYRE_CATALOG_WEIGHTS = {
     'Touring Tyres': 0,
     'Performance Tyres': -1,
+    'Sports Medium Tyres': -2,
     'High-Performance Tyres': -2,
     'Semi-Slick Track Tyres': -4,
     'Racing Slicks': -6
@@ -126,25 +177,6 @@ const REFERENCE_STOCK_LAP_SECONDS = {
         suzuka: 141.000,
         interlagos: 109.000
     },
-    'vw-parati': {
-        // Low-confidence class: recalibrated upward after GT/sim sanity checks.
-        // Stock Parati remains a light road car, but should not behave like a modern hot hatch.
-        nurburgring: 656.000,
-        monza: 190.000,
-        silverstone: 203.000,
-        spa: 241.000,
-        suzuka: 213.000,
-        interlagos: 160.000
-    },
-    'vw-brasilia': {
-        // Low-confidence class: older air-cooled VW platform; slower than Parati and close to Fusca pace.
-        nurburgring: 766.000,
-        monza: 223.000,
-        silverstone: 232.000,
-        spa: 280.000,
-        suzuka: 245.000,
-        interlagos: 184.000
-    },
     'vw-fusca': {
         // Low-confidence class: anchored to a Gran Turismo sanity check around Interlagos.
         // Stock Fusca + Touring Tyres should sit around 2:56 at Interlagos, not 2:32.
@@ -172,51 +204,90 @@ function getDefaultTyreForCar(carSlug) {
 // All names below are synchronized with populateparts.py.
 const MOD_PHYSICS_MAP = {
     // Engine internals / intake / ECU
-    // Added HP already comes from populateparts.py. These values only model response, inertia and usable powerband.
     "Forged Aluminum Pistons": { inertia: -0.010, powerband: +0.006 },
     "Bore Up": { inertia: +0.010, powerband: +0.010 },
+    "Stroke Up": { inertia: +0.015, powerband: +0.015 },
+    "Bore Up S": { inertia: +0.012, powerband: +0.012 },
+    "Stroke Up S": { inertia: +0.018, powerband: +0.018 },
     "Engine Balance Tuning": { inertia: -0.015, powerband: +0.014 },
     "High Compression Pistons": { powerband: +0.018 },
-    "Cold Air Intake": { powerband: +0.008 },
-    "Stage 2 ECU Remap": { powerband: +0.018 },
+    "Polish Parts": { inertia: -0.008, powerband: +0.008 },
+    "Titanium Connecting Rods & Pistons": { inertia: -0.025, powerband: +0.022 },
+    "High Lift Camshaft": { powerband: +0.015, inertia: +0.005 },
+    "High Lift Camshaft S": { powerband: +0.022, inertia: +0.008 },
+    "Racing Crankshaft": { inertia: -0.012, powerband: +0.012 },
+    "New Engine": { powerband: +0.035, inertia: -0.010 },
+    "Sports Computer": { powerband: +0.010 },
+    "Fully Customizable Computer": { powerband: +0.020 },
+    "Sports Air Filter": { powerband: +0.004 },
+    "Racing Air Filter": { powerband: +0.008 },
+
+    // Exhaust
+    "Sports Muffler": { powerband: +0.008, inertia: -0.005 },
+    "Semi-Racing Muffler": { powerband: +0.014, inertia: -0.008 },
+    "Racing Muffler": { powerband: +0.018, inertia: -0.010 },
+    "Racing Exhaust Manifold": { powerband: +0.010, inertia: -0.006 },
+
+    // Intercooler
+    "Sports Intercooler": { powerband: +0.004 },
+    "Racing Intercooler": { powerband: +0.008 },
 
     // Forced induction
-    // Turbos/superchargers primarily add power via added_hp. These modifiers bias how usable that power is.
     "Low-RPM Turbocharger": { powerband: +0.020, acceleration_bias: +0.010, inertia: +0.012 },
+    "Medium-RPM Turbocharger": { powerband: +0.028, acceleration_bias: +0.006, inertia: +0.018 },
     "High-RPM Turbocharger": { powerband: +0.030, acceleration_bias: -0.004, top_speed_bias: +0.010, inertia: +0.024 },
-    "Supercharger (Low-Torque)": { powerband: +0.026, acceleration_bias: +0.012, drivetrain_loss: +0.010, inertia: +0.018 },
-    "Supercharger (High-Torque)": { powerband: +0.034, acceleration_bias: +0.014, drivetrain_loss: +0.015, inertia: +0.024 },
+    "Ultra-High RPM Turbocharger": { powerband: +0.035, acceleration_bias: -0.008, top_speed_bias: +0.014, inertia: +0.030 },
+    "Low-End Torque Supercharger": { powerband: +0.026, acceleration_bias: +0.012, drivetrain_loss: +0.010, inertia: +0.018 },
+    "High-End Torque Supercharger": { powerband: +0.034, acceleration_bias: +0.014, drivetrain_loss: +0.015, inertia: +0.024 },
+    "High-RPM S Supercharger": { powerband: +0.038, acceleration_bias: +0.016, drivetrain_loss: +0.018, inertia: +0.028 },
+
+    // Anti-Lag
+    "Anti-Lag System": { powerband: +0.012, inertia: +0.005 },
+
+    // Nitro
+    "Nitro System": { powerband: +0.040 },
 
     // Transmission
     "Sports Clutch & Flywheel": { inertia: -0.012, shift_loss: -0.008 },
-    "Twin-Plate Racing Clutch": { inertia: -0.018, shift_loss: -0.013 },
-    "Lightweight Flywheel": { inertia: -0.020, powerband: +0.008 },
+    "Semi-Racing Clutch & Flywheel": { inertia: -0.016, shift_loss: -0.012 },
+    "Racing Clutch & Flywheel": { inertia: -0.022, shift_loss: -0.016 },
     "Close-Ratio Transmission (Low)": { acceleration_bias: +0.030, top_speed_bias: -0.030, shift_loss: -0.008 },
     "Close-Ratio Transmission (High)": { acceleration_bias: +0.014, top_speed_bias: +0.006, shift_loss: -0.008 },
-    "Sequential Racing Gearbox": { drivetrain_loss: -0.025, shift_loss: -0.026, acceleration_bias: +0.010 },
+    "Fully Customizable Manual Transmission": { drivetrain_loss: -0.015, shift_loss: -0.018, acceleration_bias: +0.010 },
+    "Fully Customizable Racing Transmission": { drivetrain_loss: -0.025, shift_loss: -0.026, acceleration_bias: +0.015 },
 
     // Drivetrain
-    // LSDs improve power deployment and corner exit traction. They should not create large lateral grip directly.
-    "1.5-Way LSD": { traction: +0.026, stability: +0.006 },
-    "2-Way Racing LSD": { traction: +0.038, stability: +0.010 },
-    "Carbon Fiber Driveshaft": { drivetrain_loss: -0.008, inertia: -0.012 },
+    "One-Way LSD": { traction: +0.026, stability: +0.006 },
+    "Two-Way LSD": { traction: +0.038, stability: +0.010 },
+    "Fully Customizable LSD": { traction: +0.042, stability: +0.014 },
+    "Active LSD Controller": { traction: +0.030, stability: +0.018 },
+    "Carbon Propeller Shaft": { drivetrain_loss: -0.010, inertia: -0.014 },
+    "Torque-Vectoring Center Differential": { traction: +0.020, stability: +0.010 },
 
     // Brakes
-    // Tyres cap braking; brake upgrades mainly improve consistency and high-speed confidence.
-    "Slotted Steel Discs": { brake_eff: +0.030 },
-    "Carbon Ceramic Discs": { brake_eff: +0.075, inertia: -0.010 },
-    "Sports Brake Calipers": { brake_eff: +0.026 },
+    "Sports Brake Pads": { brake_eff: +0.015 },
+    "Sports Brake Kit": { brake_eff: +0.026 },
     "Performance Brake Kit": { brake_eff: +0.055 },
-    "Racing Calipers": { brake_eff: +0.050 },
+    "Racing Brake Pads": { brake_eff: +0.035 },
+    "Racing Brake Kit (Slotted Discs)": { brake_eff: +0.040 },
+    "Racing Brake Kit (Drilled Discs)": { brake_eff: +0.050, inertia: -0.005 },
+    "Carbon Ceramic Brake Kit": { brake_eff: +0.075, inertia: -0.010 },
+    "Brake Balance Controller": { brake_eff: +0.010 },
 
     // Suspension / chassis setup
-    "Street Coilovers": { mu: +0.012, stability: +0.010 },
-    "Fully Adjustable Race Coilovers": { mu: +0.032, stability: +0.024 },
+    "Street Suspension": { mu: +0.008, stability: +0.006 },
+    "Sports Suspension": { mu: +0.015, stability: +0.012 },
+    "Height-Adjustable Sports Suspension": { mu: +0.022, stability: +0.016 },
+    "Fully Customizable Suspension": { mu: +0.032, stability: +0.024 },
     "Stiffened Anti-roll Bars": { mu: +0.010, stability: +0.020 },
 
-    // A roll cage is primarily safety equipment. It adds meaningful mass.
-    // It can stiffen older flexible shells, but should not be a universal grip upgrade.
-    "6-Point Roll Cage": { rigidity: +0.045, stability: +0.004 },
+    // Chassis reinforcement
+    "Increase Body Rigidity": { rigidity: +0.045, stability: +0.004 },
+    "New Body (Rigidity Refresh)": { rigidity: +0.035, stability: +0.006 },
+
+    // Steering
+    "Steering Angle Adapter": { stability: +0.005 },
+    "Four-Wheel Steering Controller": { stability: +0.015 },
 
     // Aerodynamics
     "Rear Diffuser": { cla: +0.060, cda: -0.004, stability: +0.004 },
@@ -225,14 +296,135 @@ const MOD_PHYSICS_MAP = {
     "Adjustable GT Wing": { cla: +0.180, cda: +0.040, stability: +0.012 },
 
     // Weight reduction
-    // The weight deltas in populateparts.py are the main performance effect.
-    // Small stability penalties model reduced NVH/trim/comfort rather than true loss of grip.
-    "Stage 1: Strip Interior": { stability: -0.002 },
-    "Stage 2: Carbon Fiber Panels": { stability: -0.003 },
-    "Stage 3: Lexan Windows & Shell": { stability: -0.006 },
+    "Stage 1 Weight Reduction": { stability: -0.002 },
+    "Stage 2 Weight Reduction": { stability: -0.003 },
+    "Stage 3 Weight Reduction": { stability: -0.005 },
+    "Stage 4 Weight Reduction": { stability: -0.007 },
+    "Stage 5 Weight Reduction": { stability: -0.009 },
+    "Stage 6 Weight Reduction": { stability: -0.012 },
 
     // Tyres are handled by TYRE_CLASS_EFFECTS using relative deltas from the car's factory tyre.
 };
+
+// ==========================================================================
+// 2b. ADJUSTMENT PHYSICS MAP (tuning sliders)
+// ==========================================================================
+
+function applyTuningEffects(dyn, partName, tuningValues) {
+    if (!tuningValues) return;
+    const adjDefs = partAdjustmentsData[partName];
+    if (!adjDefs) return;
+
+    const defaults = {};
+    adjDefs.forEach(a => { defaults[a.key] = a.default; });
+
+    for (const key in tuningValues) {
+        const val = tuningValues[key];
+        const def = defaults[key];
+        if (def === undefined) continue;
+
+        switch (key) {
+            // Ride height
+            case 'ride_height_front': {
+                const ratio = (val - def) / Math.max(def, 1);
+                dyn.cda += ratio * 0.02;
+                dyn.stability += -ratio * 0.005;
+                break;
+            }
+            case 'ride_height_rear': {
+                const ratio = (val - def) / Math.max(def, 1);
+                dyn.stability += -ratio * 0.005;
+                break;
+            }
+            // Spring rate
+            case 'nat_freq_front': dyn.mu += (val - def) * 0.002; break;
+            case 'nat_freq_rear':  dyn.mu += (val - def) * 0.002; break;
+            // Anti-roll
+            case 'anti_roll_front': dyn.stability += (val - def) * 0.002; break;
+            case 'anti_roll_rear':  dyn.stability += (val - def) * (-0.002); break;
+            // Damping
+            case 'comp_damp_front':
+            case 'comp_damp_rear':
+            case 'exp_damp_front':
+            case 'exp_damp_rear':
+                dyn.stability += (val - def) * 0.0005;
+                break;
+            // Camber
+            case 'camber_front': dyn.mu += (val - def) * 0.003; break;
+            case 'camber_rear':  dyn.mu += (val - def) * 0.003; break;
+            // Toe
+            case 'toe_front':
+                dyn.stability += (val - def) * 0.01;
+                break;
+            case 'toe_rear':
+                dyn.stability += (val - def) * 0.01;
+                dyn.traction += (val - def) * 0.005;
+                break;
+            // LSD
+            case 'initial_torque':
+                dyn.traction += (val - def) * 0.0005;
+                dyn.stability += (val - def) * 0.0003;
+                break;
+            case 'accel_sensitivity':
+                dyn.traction += (val - def) * 0.0003;
+                break;
+            case 'brake_sensitivity':
+                dyn.stability += (val - def) * 0.0003;
+                break;
+            // Transmission
+            case 'final_gear':
+                dyn.acceleration_bias += (val - def) * 0.005;
+                dyn.top_speed_bias += (val - def) * (-0.003);
+                break;
+            case 'gear_1': case 'gear_2': case 'gear_3':
+                dyn.acceleration_bias += (val - def) * 0.002;
+                break;
+            case 'gear_4':
+                dyn.acceleration_bias += (val - def) * 0.001;
+                dyn.top_speed_bias += (val - def) * (-0.001);
+                break;
+            case 'gear_5':
+            case 'gear_6':
+                dyn.top_speed_bias += (val - def) * (-0.003);
+                break;
+            // Power
+            case 'power_output':
+            case 'power_restriction':
+                // Applied in applyInstalledMods via power_pct
+                dyn.power_pct = val / 100;
+                break;
+            // Ballast
+            case 'ballast_weight':
+                dyn.extra_weight = (dyn.extra_weight || 0) + (val - def);
+                dyn.stability += (val - def) * (-0.001);
+                break;
+            case 'ballast_position':
+                dyn.stability += (val - def) * 0.001;
+                break;
+            // Brake
+            case 'brake_balance':
+                dyn.brake_eff += (val - def) * 0.005;
+                break;
+            // Aero
+            case 'rear_downforce':
+                dyn.cla += (val - def) * 0.0005;
+                dyn.cda += (val - def) * 0.0002;
+                break;
+            case 'front_downforce':
+                dyn.cla += (val - def) * 0.0005;
+                dyn.cda += (val - def) * 0.0002;
+                break;
+            // Center diff
+            case 'front_torque_split':
+                dyn.traction += (val - def) * 0.001;
+                break;
+            // 4WS
+            case 'steering_effect':
+                dyn.stability += (val - def) * 0.002;
+                break;
+        }
+    }
+}
 
 // ==========================================================================
 // 3. TRACK GEOMETRY
@@ -459,6 +651,120 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // View Laps button
+    const btnViewLaps = document.getElementById('btn-view-laps');
+    if (btnViewLaps) {
+        btnViewLaps.addEventListener('click', () => {
+            const timeDisplay = document.getElementById('lap-time-display');
+            if (!timeDisplay) return;
+
+            let lapsData = [];
+            try {
+                lapsData = JSON.parse(timeDisplay.dataset.telemetryLaps || '[]');
+            } catch (e) {}
+
+            const tbody = document.getElementById('laps-table-body');
+            if (!tbody) return;
+
+            // Find best sectors
+            const lapsWithSectors = lapsData.filter(l => l.sector_1_ms && l.sector_2_ms && l.sector_3_ms);
+            let bestS1 = null, bestS2 = null, bestS3 = null;
+            if (lapsWithSectors.length > 0) {
+                bestS1 = Math.min(...lapsWithSectors.map(l => l.sector_1_ms));
+                bestS2 = Math.min(...lapsWithSectors.map(l => l.sector_2_ms));
+                bestS3 = Math.min(...lapsWithSectors.map(l => l.sector_3_ms));
+            }
+
+            function msToTime(ms) {
+                if (!ms || ms <= 0) return '--';
+                const sec = ms / 1000;
+                const m = Math.floor(sec / 60);
+                const s = (sec % 60).toFixed(3);
+                return `${m}:${+s < 10 ? '0' : ''}${s}`;
+            }
+
+            tbody.innerHTML = lapsData.length === 0
+                ? '<tr><td colspan="8" class="no-data">No telemetry data available</td></tr>'
+                : lapsData.map((lap, idx) => {
+                    const hasSectors = lap.sector_1_ms && lap.sector_2_ms && lap.sector_3_ms;
+                    const s1Best = hasSectors && bestS1 !== null && lap.sector_1_ms === bestS1;
+                    const s2Best = hasSectors && bestS2 !== null && lap.sector_2_ms === bestS2;
+                    const s3Best = hasSectors && bestS3 !== null && lap.sector_3_ms === bestS3;
+                    const rowClass = s1Best || s2Best || s3Best ? 'has-best-sector' : '';
+                    return `<tr class="${rowClass}">
+                        <td>${idx + 1}</td>
+                        <td>${lap.lap_number}</td>
+                        <td class="lap-time-cell">${secondsToTime(lap.lap_time_seconds)}</td>
+                        <td class="${s1Best ? 'best-sector-cell' : ''}">${msToTime(lap.sector_1_ms)}</td>
+                        <td class="${s2Best ? 'best-sector-cell' : ''}">${msToTime(lap.sector_2_ms)}</td>
+                        <td class="${s3Best ? 'best-sector-cell' : ''}">${msToTime(lap.sector_3_ms)}</td>
+                        <td>${lap.max_speed_kmh ? lap.max_speed_kmh.toFixed(1) + ' km/h' : '--'}</td>
+                        <td>${lap.avg_speed_kmh ? lap.avg_speed_kmh.toFixed(1) + ' km/h' : '--'}</td>
+                    </tr>`;
+                }).join('');
+
+            // Populate projected footer row
+            if (lapsWithSectors.length > 0) {
+                const projectedMs = bestS1 + bestS2 + bestS3;
+                document.getElementById('best-s1-cell').textContent = msToTime(bestS1);
+                document.getElementById('best-s2-cell').textContent = msToTime(bestS2);
+                document.getElementById('best-s3-cell').textContent = msToTime(bestS3);
+                const projectedRow = document.getElementById('projected-row');
+                const projectedTimeCell = projectedRow.querySelector('.lap-time-cell');
+                projectedTimeCell.textContent = msToTime(projectedMs);
+                projectedTimeCell.classList.add('projected-time');
+            } else {
+                document.getElementById('best-s1-cell').textContent = '--';
+                document.getElementById('best-s2-cell').textContent = '--';
+                document.getElementById('best-s3-cell').textContent = '--';
+            }
+
+            document.getElementById('laps-modal').showModal();
+        });
+    }
+
+    // Close laps modal on backdrop click
+    const lapsModal = document.getElementById('laps-modal');
+    if (lapsModal) {
+        lapsModal.addEventListener('click', (e) => {
+            if (e.target === lapsModal) lapsModal.close();
+        });
+    }
+
+    // Load part adjustments data
+    const adjScript = document.getElementById('part-adjustments-data');
+    if (adjScript) {
+        try {
+            partAdjustmentsData = JSON.parse(adjScript.textContent);
+        } catch (e) {
+            console.warn('Failed to parse part-adjustments-data:', e);
+        }
+    }
+
+    // Tune modal - close on backdrop click
+    const tuneModal = document.getElementById('tune-modal');
+    if (tuneModal) {
+        tuneModal.addEventListener('click', (e) => {
+            if (e.target === tuneModal) tuneModal.close();
+        });
+    }
+
+    // Tune modal - apply button
+    const btnApply = document.getElementById('btn-tune-apply');
+    if (btnApply) {
+        btnApply.addEventListener('click', () => {
+            applyTuningValues();
+        });
+    }
+
+    // Tune modal - reset button
+    const btnReset = document.getElementById('btn-tune-reset');
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            resetTuningValues();
+        });
+    }
+
     equipDefaultTyreFromCatalog(parts);
     renderInstalledMods();
 });
@@ -477,6 +783,8 @@ function renderInstalledMods() {
         const safePartName = partName.replace(/'/g, "\\'");
         const desc = mod.factoryDefault ? 'FACTORY EQUIPPED TYRE' : 'TUNING PART';
 
+        const hasTuning = partAdjustmentsData[partName] && partAdjustmentsData[partName].length > 0;
+
         row.innerHTML = `
             <div class="mod-left-info">
                 <img src="${mod.img}" alt="${partName}" class="mod-row-img">
@@ -486,6 +794,7 @@ function renderInstalledMods() {
                 </div>
             </div>
             <div class="mod-right-stats">
+                ${hasTuning ? `<button class="btn-tune-mod" onclick="openTuneModal('${safePartName}')">TUNE</button>` : ''}
                 <button class="btn-remove-mod" onclick="removeModification('${partName}')">REMOVE</button>
             </div>
         `;
@@ -547,12 +856,19 @@ function applyInstalledMods(baseStats, basePowerHP, baseWeightKG, carSlug, mods 
         inertia: 0,
         stability: 0,
         rigidity: 0,
+        extra_weight: 0,
+        power_pct: 1.0,
         chassis_flex: baseStats.chassis_flex ?? 0.35
     };
 
     for (const name in mods) {
         dyn.powerHP += mods[name].hp || 0;
         dyn.weightKG += mods[name].weight || 0;
+
+        // Apply tuning adjustments for this part
+        if (mods[name].tuning) {
+            applyTuningEffects(dyn, name, mods[name].tuning);
+        }
 
         // Tyres are not additive generic mods. They are handled below as a selected compound
         // relative to the car's factory/default tyre.
@@ -567,6 +883,10 @@ function applyInstalledMods(baseStats, basePowerHP, baseWeightKG, carSlug, mods 
             }
         }
     }
+
+    // Apply global tuning effects
+    dyn.powerHP *= dyn.power_pct;
+    dyn.weightKG += dyn.extra_weight;
 
     const currentTyre = getCurrentTyreName(mods);
     const defaultTyre = getDefaultTyreForCar(carSlug);
@@ -811,48 +1131,153 @@ function recalculatePerformance() {
     const timeDisplay = document.getElementById('lap-time-display');
     if (!timeDisplay) return;
 
+    const hasTelemetry = timeDisplay.dataset.hasTelemetry === 'true';
+    // Use best projected lap if available, otherwise fall back to best real lap
+    const tuningBase = parseFloat(timeDisplay.dataset.tuningBaseSeconds);
+    const bestLapSeconds = parseFloat(timeDisplay.dataset.bestLapSeconds);
+    const baseRef = tuningBase && tuningBase > 0 ? tuningBase : (bestLapSeconds || 0);
+
+    if (!hasTelemetry || !baseRef || baseRef <= 0) {
+        timeDisplay.innerText = "--:--.---";
+        return;
+    }
+
+    // Real telemetry base time, with physics delta for mods
     const { carSlug, trackSlug, basePowerHP, baseWeightKG } = getSimulationContext(timeDisplay);
 
-    if (!carSlug || !trackSlug || !BASE_CAR_STATS[carSlug] || !TRACKS[trackSlug]) {
-        timeDisplay.innerText = "--:--.---";
-        return;
+    if (getCurrentTyreName() && BASE_CAR_STATS[carSlug] && TRACKS[trackSlug]) {
+        const dyn = applyInstalledMods(BASE_CAR_STATS[carSlug], basePowerHP, baseWeightKG, carSlug, installedMods);
+        const stockMods = buildFactoryStockMods(carSlug);
+        const stockDyn = applyInstalledMods(BASE_CAR_STATS[carSlug], basePowerHP, baseWeightKG, carSlug, stockMods);
+        const stockResult = simulateLap(stockDyn, TRACKS[trackSlug]);
+        const moddedResult = simulateLap(dyn, TRACKS[trackSlug]);
+
+        if (stockResult && moddedResult && stockResult.totalTimeSeconds > 0) {
+            const modRatio = moddedResult.totalTimeSeconds / stockResult.totalTimeSeconds;
+            const calibratedTime = baseRef * modRatio;
+            timeDisplay.innerText = secondsToTime(calibratedTime);
+            window.REVLABS_LAST_SIM = {
+                baseTelemetry: baseRef,
+                modRatio: modRatio,
+                calibratedTime: calibratedTime,
+            };
+            return;
+        }
     }
 
-    if (!Number.isFinite(basePowerHP) || !Number.isFinite(baseWeightKG)) {
-        timeDisplay.innerText = "--:--.---";
-        return;
-    }
-
-    if (!getCurrentTyreName()) {
-        timeDisplay.innerText = "--:--.---";
-        window.REVLABS_LAST_SIM = { error: 'missing_tyre', carSlug, trackSlug };
-        return;
-    }
-
-    const dyn = applyInstalledMods(BASE_CAR_STATS[carSlug], basePowerHP, baseWeightKG, carSlug, installedMods);
-    const result = simulateLap(dyn, TRACKS[trackSlug]);
-
-    if (!result) {
-        timeDisplay.innerText = "--:--.---";
-        return;
-    }
-
-    const stockMods = buildFactoryStockMods(carSlug);
-    const stockDyn = applyInstalledMods(BASE_CAR_STATS[carSlug], basePowerHP, baseWeightKG, carSlug, stockMods);
-    const stockResult = simulateLap(stockDyn, TRACKS[trackSlug]);
-    const calibration = calibrateAgainstReference(result, stockResult, carSlug, trackSlug);
-
-    timeDisplay.innerText = secondsToTime(calibration.calibratedSeconds);
-
-    // Useful for debugging/calibration in browser DevTools:
-    // window.REVLABS_LAST_SIM.avgSpeedKmh, topSpeedKmh, dyn, rawSeconds, referenceSeconds, solverRatio, etc.
-    window.REVLABS_LAST_SIM = {
-        ...result,
-        rawSeconds: result.totalTimeSeconds,
-        totalTimeSeconds: calibration.calibratedSeconds,
-        stockSolverSeconds: stockResult?.totalTimeSeconds || null,
-        referenceSeconds: calibration.referenceSeconds,
-        solverRatio: calibration.solverRatio,
-        calibrated: Boolean(calibration.referenceSeconds)
-    };
+    timeDisplay.innerText = secondsToTime(baseRef);
 }
+
+// ==========================================================================
+// 6. TUNING PANEL (ADJUSTABLE PARTS)
+// ==========================================================================
+
+window.openTuneModal = function(partName) {
+    const adjDefs = partAdjustmentsData[partName];
+    if (!adjDefs || adjDefs.length === 0) return;
+
+    currentTuningPart = partName;
+
+    const titleEl = document.getElementById('tune-modal-title');
+    const nameEl = document.getElementById('tune-part-name');
+    const imgEl = document.getElementById('tune-part-img');
+    const container = document.getElementById('tune-sliders-container');
+
+    if (titleEl) titleEl.innerText = `TUNE: ${partName.toUpperCase()}`;
+    if (nameEl) nameEl.innerText = partName.toUpperCase();
+    if (imgEl && installedMods[partName]) imgEl.src = installedMods[partName].img;
+
+    if (!container) return;
+
+    const existingTuning = installedMods[partName]?.tuning || {};
+
+    container.innerHTML = adjDefs.map((adj, idx) => {
+        const val = existingTuning[adj.key] !== undefined ? existingTuning[adj.key] : adj.default;
+        const unitHtml = adj.unit ? `<span class="tune-slider-unit">${adj.unit}</span>` : '';
+
+        return `
+            <div class="tune-slider-row">
+                <div class="tune-slider-header">
+                    <span class="tune-slider-label">${adj.label}</span>
+                    <span class="tune-slider-value" id="tune-val-${idx}">${val}${unitHtml}</span>
+                </div>
+                <input type="range" class="tune-slider"
+                    data-adj-key="${adj.key}"
+                    data-adj-idx="${idx}"
+                    data-unit="${adj.unit}"
+                    min="${adj.min}" max="${adj.max}" step="${adj.step}"
+                    value="${val}">
+            </div>
+        `;
+    }).join('');
+
+    // Attach input events to sliders
+    container.querySelectorAll('.tune-slider').forEach(slider => {
+        slider.addEventListener('input', function() {
+            const idx = this.dataset.adjIdx;
+            const key = this.dataset.adjKey;
+            const unit = this.dataset.unit || '';
+            const val = parseFloat(this.value);
+            const valSpan = document.getElementById(`tune-val-${idx}`);
+            if (valSpan) {
+                const formatted = adj.step < 1 ? val.toFixed(2) : val;
+                valSpan.innerHTML = `${formatted}${unit ? `<span class="tune-slider-unit">${unit}</span>` : ''}`;
+            }
+            // Store temporary value
+            if (!window._tuneTempValues) window._tuneTempValues = {};
+            if (!window._tuneTempValues[partName]) window._tuneTempValues[partName] = {};
+            window._tuneTempValues[partName][key] = val;
+        });
+    });
+
+    window._tuneTempValues = {};
+    window._tuneTempValues[partName] = {};
+
+    const modal = document.getElementById('tune-modal');
+    if (modal) modal.showModal();
+};
+
+window.applyTuningValues = function() {
+    if (!currentTuningPart || !window._tuneTempValues || !window._tuneTempValues[currentTuningPart]) return;
+
+    if (!installedMods[currentTuningPart]) {
+        installedMods[currentTuningPart] = { hp: 0, weight: 0, img: '', mainCat: '', factoryDefault: false };
+    }
+    installedMods[currentTuningPart].tuning = { ...window._tuneTempValues[currentTuningPart] };
+
+    // Mark any modified values for display
+    window._tuneTempValues = {};
+    currentTuningPart = null;
+
+    const modal = document.getElementById('tune-modal');
+    if (modal) modal.close();
+
+    renderInstalledMods();
+};
+
+window.resetTuningValues = function() {
+    if (!currentTuningPart) return;
+    const adjDefs = partAdjustmentsData[currentTuningPart];
+    if (!adjDefs) return;
+
+    // Reset sliders to defaults
+    const container = document.getElementById('tune-sliders-container');
+    if (container) {
+        container.querySelectorAll('.tune-slider').forEach(slider => {
+            const idx = slider.dataset.adjIdx;
+            const adj = adjDefs[parseInt(idx)];
+            if (adj) {
+                slider.value = adj.default;
+                const valSpan = document.getElementById(`tune-val-${idx}`);
+                if (valSpan) {
+                    const formatted = adj.step < 1 ? adj.default.toFixed(2) : adj.default;
+                    valSpan.innerHTML = `${formatted}${adj.unit ? `<span class="tune-slider-unit">${adj.unit}</span>` : ''}`;
+                }
+                // Update temp value
+                if (!window._tuneTempValues) window._tuneTempValues = {};
+                if (!window._tuneTempValues[currentTuningPart]) window._tuneTempValues[currentTuningPart] = {};
+                window._tuneTempValues[currentTuningPart][adj.key] = adj.default;
+            }
+        });
+    }
+};

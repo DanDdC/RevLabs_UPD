@@ -66,7 +66,7 @@ class Teste_01_FluxoSimulador(LiveServerTestCase):
             base_avg_speed_kmh=110.0,
             power_hp=50.0,
             weight_kg=800.0,
-            image_path="img/fusca.png"
+            image_path="img/vw-fusca.png"
         )
         self.car2 = Car.objects.create(
             slug_id="porsche-911",

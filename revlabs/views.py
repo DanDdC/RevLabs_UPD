@@ -1,11 +1,13 @@
+import json
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 
 from .forms import RevLabsAuthenticationForm, RevLabsUserCreationForm
-from .models import Car, Track, PartCategory
+from .models import Car, Track, PartCategory, TelemetryLap, CarPart, PartAdjustment
 
 
 def time_to_seconds(time_str):
@@ -14,6 +16,8 @@ def time_to_seconds(time_str):
 
 
 def seconds_to_time(seconds):
+    if seconds is None or seconds <= 0:
+        return "--:--.---"
     m = int(seconds // 60)
     s = seconds % 60
     return f"{m}:{s:06.3f}"
@@ -104,22 +108,116 @@ def dashboard(request):
 
     categories = PartCategory.objects.prefetch_related('parts').all()
 
+    # Telemetry data
+    telemetry_laps = TelemetryLap.objects.filter(
+        car=selected_car, track=selected_track, is_complete=True
+    ).order_by('lap_time_ms')
+
+    has_telemetry = telemetry_laps.exists()
+
+    if has_telemetry:
+        top_10 = list(telemetry_laps[:10])
+        best_time = top_10[0].lap_time_seconds
+        telemetry_json = [{
+            'lap_number': l.lap_number,
+            'lap_time_seconds': l.lap_time_seconds,
+            'max_speed_kmh': l.max_speed_kmh,
+            'avg_speed_kmh': l.avg_speed_kmh,
+            'sector_1_ms': l.sector_1_ms,
+            'sector_2_ms': l.sector_2_ms,
+            'sector_3_ms': l.sector_3_ms,
+        } for l in top_10]
+
+        # Best projected lap = sum of best sectors across all laps
+        sectors = [l for l in top_10 if l.sector_1_ms and l.sector_2_ms and l.sector_3_ms]
+        if sectors:
+            best_s1 = min(l.sector_1_ms for l in sectors)
+            best_s2 = min(l.sector_2_ms for l in sectors)
+            best_s3 = min(l.sector_3_ms for l in sectors)
+            best_projected_ms = best_s1 + best_s2 + best_s3
+            best_projected_seconds = best_projected_ms / 1000.0
+        else:
+            best_projected_seconds = None
+    else:
+        best_time = None
+        best_projected_seconds = None
+        telemetry_json = []
+
     track_length = selected_track.length_km
     track_multiplier = selected_track.speed_multiplier
-
     base_speed = selected_car.base_avg_speed_kmh * track_multiplier
     base_seconds = (track_length / base_speed) * 3600
-    final_time = seconds_to_time(base_seconds)
+
+    # Show best projected lap if sectors exist, otherwise best real lap
+    tuning_base = best_projected_seconds or best_time
+    final_display = seconds_to_time(tuning_base) if tuning_base else "--:--.---"
+
+    # Part adjustments data for tuning UI
+    adjustable_parts = CarPart.objects.filter(is_adjustable=True).prefetch_related('adjustments')
+    part_adjustments = {}
+    for p in adjustable_parts:
+        adj_list = []
+        for a in p.adjustments.all():
+            adj_list.append({
+                'key': a.param_key,
+                'label': a.label,
+                'min': a.min_value,
+                'max': a.max_value,
+                'step': a.step,
+                'default': a.default_value,
+                'unit': a.unit,
+                'order': a.display_order,
+            })
+        adj_list.sort(key=lambda x: x['order'])
+        part_adjustments[p.name] = adj_list
 
     context = {
         'car': selected_car,
         'track': selected_track,
-        'final_time': final_time,
-        'base_time': final_time,
+        'final_time': final_display,
+        'base_time': final_display,
         'track_length': track_length,
         'base_speed': base_speed,
         'base_power': selected_car.power_hp,
         'base_weight': selected_car.weight_kg,
         'categories': categories,
+        'has_telemetry': has_telemetry,
+        'telemetry_laps': json.dumps(telemetry_json),
+        'telemetry_count': min(len(telemetry_laps), 10),
+        'best_lap_seconds': best_time,
+        'best_projected_seconds': best_projected_seconds,
+        'tuning_base_seconds': tuning_base,
+        'part_adjustments': json.dumps(part_adjustments),
     }
     return render(request, 'simulator/dashboard.html', context)
+
+
+@login_required
+def api_telemetry_laps(request):
+    car_id = request.GET.get('car', '')
+    track_id = request.GET.get('track', '')
+
+    laps = TelemetryLap.objects.filter(is_complete=True)
+    if car_id:
+        laps = laps.filter(car__slug_id=car_id)
+    if track_id:
+        laps = laps.filter(track__slug_id=track_id)
+
+    laps = laps.order_by('lap_time_ms')[:10]
+
+    data = [
+        {
+            'lap_number': l.lap_number,
+            'lap_time_seconds': l.lap_time_seconds,
+            'max_speed_kmh': l.max_speed_kmh,
+            'min_speed_kmh': l.min_speed_kmh,
+            'avg_speed_kmh': l.avg_speed_kmh,
+            'avg_throttle_pct': l.avg_throttle_pct,
+            'avg_brake_pct': l.avg_brake_pct,
+            'max_rpm': l.max_rpm,
+            'total_frames': l.total_frames,
+            'imported_at': l.imported_at.isoformat(),
+        }
+        for l in laps
+    ]
+    return JsonResponse({'laps': data})

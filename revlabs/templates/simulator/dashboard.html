@@ -79,16 +79,38 @@
                 </section>
 
                 <div class="predicted-time-container">
-                    <span class="time-label">ESTIMATED LAP TIME</span>
+                    <span class="time-label">
+                        LAP TIME
+                        {% if has_telemetry %}
+                        <span class="telem-badge">TELEMETRY</span>
+                        {% endif %}
+                    </span>
                     <div class="predicted-time">
-                        <span id="lap-time-display"
+                         <span id="lap-time-display"
+                              class="{% if not has_telemetry %}no-telem{% endif %}"
                               data-track-slug="{{ track.slug_id }}"
                               data-car-slug="{{ car.slug_id }}"
                               data-track-length="{{ track.length_km }}"
                               data-base-speed="{{ base_speed }}"
                               data-base-power="{{ base_power }}"
-                              data-base-weight="{{ base_weight }}">{{ final_time }}</span>
+                              data-base-weight="{{ base_weight }}"
+                              data-has-telemetry="{{ has_telemetry|lower }}"
+                              data-best-lap-seconds="{{ best_lap_seconds }}"
+                              data-best-projected-seconds="{{ best_projected_seconds|default:'' }}"
+                              data-tuning-base-seconds="{{ tuning_base_seconds|default:'' }}"
+                              data-telemetry-laps='{{ telemetry_laps|safe }}'>{{ final_time }}</span>
                     </div>
+                    {% if has_telemetry %}
+                    <div class="telemetry-info">
+                        <span class="telem-stats">
+                            {% if best_projected_seconds %}
+                            <span class="projected-badge">PROJECTED</span>
+                            {% endif %}
+                            Best of {{ telemetry_count }} telemetry laps
+                        </span>
+                        <button id="btn-view-laps" class="btn-telemetry">VIEW LAPS</button>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <section class="dynamic-mod-container">
@@ -98,6 +120,8 @@
             </section>
         </div>
     </div>
+
+    <script id="part-adjustments-data" type="application/json">{{ part_adjustments|safe }}</script>
 
     <dialog id="mod-modal" class="mod-modal">
         <div class="modal-content-area">
@@ -126,6 +150,60 @@
                     {% endfor %}
                 </div>
             </div>
+        </div>
+    </dialog>
+
+    <dialog id="laps-modal" class="laps-modal">
+        <div class="laps-modal-header">
+            <span class="laps-modal-title">TELEMETRY LAPS</span>
+            <button class="laps-modal-close" onclick="document.getElementById('laps-modal').close()">&times;</button>
+        </div>
+        <div class="laps-modal-body">
+            <table class="laps-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>LAP</th>
+                        <th>TIME</th>
+                        <th>SECTOR 1</th>
+                        <th>SECTOR 2</th>
+                        <th>SECTOR 3</th>
+                        <th>MAX SPEED</th>
+                        <th>AVG SPEED</th>
+                    </tr>
+                </thead>
+                <tbody id="laps-table-body"></tbody>
+                <tfoot id="laps-table-footer" class="laps-footer">
+                    <tr id="projected-row" class="projected-row">
+                        <td></td>
+                        <td></td>
+                        <td class="lap-time-cell projected-label">PROJECTED</td>
+                        <td id="best-s1-cell" class="best-sector-cell"></td>
+                        <td id="best-s2-cell" class="best-sector-cell"></td>
+                        <td id="best-s3-cell" class="best-sector-cell"></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </dialog>
+
+    <dialog id="tune-modal" class="tune-modal">
+        <div class="tune-modal-header">
+            <span id="tune-modal-title" class="tune-modal-title">TUNE PART</span>
+            <button class="tune-modal-close" onclick="document.getElementById('tune-modal').close()">&times;</button>
+        </div>
+        <div class="tune-modal-body" id="tune-modal-body">
+            <div class="tune-part-info">
+                <img id="tune-part-img" src="" alt="" class="tune-part-img">
+                <span id="tune-part-name" class="tune-part-name"></span>
+            </div>
+            <div class="tune-sliders-container" id="tune-sliders-container"></div>
+        </div>
+        <div class="tune-modal-footer">
+            <button class="btn-tune-reset" id="btn-tune-reset">RESET TO DEFAULT</button>
+            <button class="btn-tune-apply" id="btn-tune-apply">APPLY</button>
         </div>
     </dialog>
 
