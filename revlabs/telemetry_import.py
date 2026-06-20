@@ -107,14 +107,25 @@ def run_import(telemetry_db_path, print_func=print):
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
+    # Get session notes lookup
+    cur.execute("SELECT id, notes FROM sessions")
+    session_notes = {r['id']: r['notes'] for r in cur.fetchall()}
+
+    # Read laps with COALESCE track_id from lap or session
     cur.execute("""
-        SELECT s.id as session_id, s.car_code, s.track_id, s.started_at, s.completed_at, s.notes,
-               l.id as lap_id, l.lap_number, l.lap_time_ms, l.is_complete,
-               l.started_at as lap_started_at, l.completed_at as lap_completed_at
-        FROM sessions s
-        JOIN laps l ON l.session_id = s.id
-        WHERE l.is_complete = 1 AND l.lap_time_ms IS NOT NULL AND l.lap_number > 0
-        ORDER BY s.started_at DESC, l.lap_number
+        SELECT l.id as lap_id, l.session_id, l.lap_number, l.lap_time_ms,
+               l.car_code,
+               COALESCE(l.track_id, s.track_id) as track_id,
+               l.is_complete
+        FROM laps l
+        LEFT JOIN sessions s ON s.id = l.session_id
+        WHERE l.is_complete = 1
+          AND l.lap_time_ms IS NOT NULL AND l.lap_time_ms > 0
+          AND l.car_code IS NOT NULL AND l.car_code != 0
+          AND COALESCE(l.track_id, s.track_id) IS NOT NULL
+          AND COALESCE(l.track_id, s.track_id) != 0
+        ORDER BY l.id DESC
+        LIMIT 100
     """)
     rows = cur.fetchall()
 
@@ -131,10 +142,6 @@ def run_import(telemetry_db_path, print_func=print):
         car_code = row['car_code']
         track_id = row['track_id']
 
-        if not car_code or not track_id:
-            skipped += 1
-            continue
-
         try:
             car = Car.objects.get(car_code=car_code)
             track = Track.objects.get(track_id=track_id)
@@ -143,10 +150,6 @@ def run_import(telemetry_db_path, print_func=print):
             continue
 
         lap_time_ms = row['lap_time_ms']
-        if not lap_time_ms or lap_time_ms <= 0:
-            skipped += 1
-            continue
-
         lap_time_seconds = lap_time_ms / 1000.0
 
         existing = TelemetryLap.objects.filter(
@@ -187,7 +190,7 @@ def run_import(telemetry_db_path, print_func=print):
             max_rpm=max_rpm,
             avg_throttle_pct=avg_thr,
             avg_brake_pct=avg_brk,
-            session_notes=row['notes'],
+            session_notes=session_notes.get(row['session_id'], ''),
             original_session_id=row['session_id'],
             original_lap_id=row['lap_id'],
             total_frames=len(frames),

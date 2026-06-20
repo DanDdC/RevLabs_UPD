@@ -127,6 +127,7 @@
     </div>
 
     <script id="part-adjustments-data" type="application/json">{{ part_adjustments|safe }}</script>
+    <script id="preset-mods-data" type="application/json">{{ preset_mods|safe }}</script>
 
     <dialog id="mod-modal" class="mod-modal">
         <div class="modal-content-area">
@@ -168,7 +169,6 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>LAP</th>
                         <th>TIME</th>
                         <th>SECTOR 1</th>
                         <th>SECTOR 2</th>
@@ -180,7 +180,6 @@
                 <tbody id="laps-table-body"></tbody>
                 <tfoot id="laps-table-footer" class="laps-footer">
                     <tr id="projected-row" class="projected-row">
-                        <td></td>
                         <td></td>
                         <td class="lap-time-cell projected-label">PROJECTED</td>
                         <td id="best-s1-cell" class="best-sector-cell"></td>

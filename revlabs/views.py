@@ -26,7 +26,7 @@ def seconds_to_time(seconds):
 def home(request):
     """Public landing page. It is the only page available before authentication."""
     context = {
-        'featured_track': Track.objects.filter(slug_id='nurburgring').first() or Track.objects.first(),
+        'featured_track': Track.objects.filter(slug_id='interlagos').first() or Track.objects.first(),
         'featured_car': Car.objects.filter(slug_id__in=['porsche', 'porsche-911']).first() or Car.objects.first(),
     }
     return render(request, 'landing/home.html', context)
@@ -60,8 +60,8 @@ def signup(request):
 @login_required
 def track_selection(request):
     try:
-        hero_track = Track.objects.get(slug_id='nurburgring')
-        other_tracks = Track.objects.exclude(slug_id='nurburgring')
+        hero_track = Track.objects.get(slug_id='interlagos')
+        other_tracks = Track.objects.exclude(slug_id='interlagos')
     except Track.DoesNotExist:
         hero_track = Track.objects.first()
         other_tracks = Track.objects.exclude(id=hero_track.id) if hero_track else []
@@ -82,6 +82,10 @@ def car_selection(request):
     except Track.DoesNotExist:
         selected_track = Track.objects.first()
 
+    # Only Interlagos is fully configured; other tracks show coming soon
+    if selected_track and selected_track.slug_id != 'interlagos':
+        return render(request, 'simulator/coming_soon.html', {'track': selected_track})
+
     cars = Car.objects.all()
 
     context = {
@@ -89,6 +93,34 @@ def car_selection(request):
         'selected_track': selected_track,
     }
     return render(request, 'simulator/car_selection.html', context)
+
+
+PRESET_MODS = {
+    ('mercedes-amg', 'interlagos'): [
+        'Sports Medium Tyres',
+        'Bore Up',
+        'Engine Balance Tuning',
+        'Polish Parts',
+        'Stage 1 Weight Reduction',
+        'Stage 2 Weight Reduction',
+        'Stage 3 Weight Reduction',
+        'Stage 4 Weight Reduction',
+    ],
+}
+
+
+def _get_preset_mods(car, track):
+    from django.templatetags.static import static
+    names = PRESET_MODS.get((car.slug_id, track.slug_id), [])
+    parts = list(CarPart.objects.filter(name__in=names))
+    part_by_name = {p.name: p for p in parts}
+    return [
+        {
+            'name': name,
+            'image_path': static(part_by_name[name].image_path) if name in part_by_name else static(f'img/mods/{name.lower().replace(chr(32), "")}.png'),
+        }
+        for name in names
+    ]
 
 
 @login_required
@@ -188,6 +220,7 @@ def dashboard(request):
         'best_projected_seconds': best_projected_seconds,
         'tuning_base_seconds': tuning_base,
         'part_adjustments': json.dumps(part_adjustments),
+        'preset_mods': json.dumps(_get_preset_mods(selected_car, selected_track)),
     }
     return render(request, 'simulator/dashboard.html', context)
 

@@ -693,7 +693,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const rowClass = s1Best || s2Best || s3Best ? 'has-best-sector' : '';
                     return `<tr class="${rowClass}">
                         <td>${idx + 1}</td>
-                        <td>${lap.lap_number}</td>
                         <td class="lap-time-cell">${secondsToTime(lap.lap_time_seconds)}</td>
                         <td class="${s1Best ? 'best-sector-cell' : ''}">${msToTime(lap.sector_1_ms)}</td>
                         <td class="${s2Best ? 'best-sector-cell' : ''}">${msToTime(lap.sector_2_ms)}</td>
@@ -793,6 +792,33 @@ document.addEventListener('DOMContentLoaded', () => {
             partAdjustmentsData = JSON.parse(adjScript.textContent);
         } catch (e) {
             console.warn('Failed to parse part-adjustments-data:', e);
+        }
+    }
+
+    // Auto-install preset mods (specific car+track combinations)
+    const presetScript = document.getElementById('preset-mods-data');
+    if (presetScript) {
+        try {
+            const presetMods = JSON.parse(presetScript.textContent);
+            if (Array.isArray(presetMods) && presetMods.length > 0) {
+                presetMods.forEach(item => {
+                    const modName = typeof item === 'object' ? item.name : item;
+                    const imgPath = typeof item === 'object' ? item.image_path : `img/mods/${modName.toLowerCase().replace(/\s+/g, '')}.png`;
+                    const effect = MOD_PHYSICS_MAP[modName];
+                    if (effect && !installedMods[modName]) {
+                        installedMods[modName] = {
+                            hp: effect.hp || 0,
+                            weight: effect.weight || 0,
+                            img: imgPath,
+                            mainCat: '',
+                            factoryDefault: false
+                        };
+                    }
+                });
+                renderInstalledMods();
+            }
+        } catch (e) {
+            console.warn('Failed to parse preset-mods-data:', e);
         }
     }
 
@@ -1187,7 +1213,6 @@ function recalculatePerformance() {
     if (!timeDisplay) return;
 
     const hasTelemetry = timeDisplay.dataset.hasTelemetry === 'true';
-    // Use best projected lap if available, otherwise fall back to best real lap
     const tuningBase = parseFloat(timeDisplay.dataset.tuningBaseSeconds);
     const bestLapSeconds = parseFloat(timeDisplay.dataset.bestLapSeconds);
     const baseRef = tuningBase && tuningBase > 0 ? tuningBase : (bestLapSeconds || 0);
@@ -1195,29 +1220,6 @@ function recalculatePerformance() {
     if (!hasTelemetry || !baseRef || baseRef <= 0) {
         timeDisplay.innerText = "--:--.---";
         return;
-    }
-
-    // Real telemetry base time, with physics delta for mods
-    const { carSlug, trackSlug, basePowerHP, baseWeightKG } = getSimulationContext(timeDisplay);
-
-    if (getCurrentTyreName() && BASE_CAR_STATS[carSlug] && TRACKS[trackSlug]) {
-        const dyn = applyInstalledMods(BASE_CAR_STATS[carSlug], basePowerHP, baseWeightKG, carSlug, installedMods);
-        const stockMods = buildFactoryStockMods(carSlug);
-        const stockDyn = applyInstalledMods(BASE_CAR_STATS[carSlug], basePowerHP, baseWeightKG, carSlug, stockMods);
-        const stockResult = simulateLap(stockDyn, TRACKS[trackSlug]);
-        const moddedResult = simulateLap(dyn, TRACKS[trackSlug]);
-
-        if (stockResult && moddedResult && stockResult.totalTimeSeconds > 0) {
-            const modRatio = moddedResult.totalTimeSeconds / stockResult.totalTimeSeconds;
-            const calibratedTime = baseRef * modRatio;
-            timeDisplay.innerText = secondsToTime(calibratedTime);
-            window.REVLABS_LAST_SIM = {
-                baseTelemetry: baseRef,
-                modRatio: modRatio,
-                calibratedTime: calibratedTime,
-            };
-            return;
-        }
     }
 
     timeDisplay.innerText = secondsToTime(baseRef);

@@ -30,7 +30,9 @@ python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
 
 # Run TelemetryIQ
-.venv\Scripts\python telemetryiq.py   # or the appropriate entry point
+cd C:\Users\user\RevLabs\TelemetryIQ
+$env:PS_IP = "192.168.X.XXX"  # substitua pelo IP do seu PlayStation
+.venv\Scripts\python -m rexy
 ```
 
 To use `make` on Windows, install it via:
