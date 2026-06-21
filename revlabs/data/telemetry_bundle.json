@@ -1,0 +1,311 @@
+{
+  "export_version": 1,
+  "exported_at": "2026-06-21T19:25:44.643434+00:00",
+  "source": "TelemetryIQ",
+  "laps": [
+    {
+      "car_code": 3485,
+      "track_id": 152,
+      "lap_number": 1,
+      "lap_time_ms": 101041,
+      "session_notes": null,
+      "original_session_id": 3,
+      "original_lap_id": 55,
+      "sector1_ms": 29016,
+      "sector2_ms": 43616,
+      "sector3_ms": 28409,
+      "stats": {
+        "max_speed_kmh": 307.20237121582034,
+        "min_speed_kmh": 58.08747024536133,
+        "avg_speed_kmh": 151.56687380806284,
+        "avg_throttle_pct": 47.38125499251325,
+        "avg_brake_pct": 16.05631069845058
+      }
+    },
+    {
+      "car_code": 3485,
+      "track_id": 152,
+      "lap_number": 2,
+      "lap_time_ms": 101041,
+      "session_notes": null,
+      "original_session_id": 3,
+      "original_lap_id": 56,
+      "sector1_ms": null,
+      "sector2_ms": null,
+      "sector3_ms": null,
+      "stats": {
+        "max_speed_kmh": 294.5794647216797,
+        "min_speed_kmh": 293.6433471679688,
+        "avg_speed_kmh": 294.1058406829834,
+        "avg_throttle_pct": 100.0,
+        "avg_brake_pct": 0.0
+      }
+    },
+    {
+      "car_code": 3485,
+      "track_id": 152,
+      "lap_number": 2,
+      "lap_time_ms": 99310,
+      "session_notes": null,
+      "original_session_id": 3,
+      "original_lap_id": 57,
+      "sector1_ms": 30192,
+      "sector2_ms": 41467,
+      "sector3_ms": 27651,
+      "stats": {
+        "max_speed_kmh": 301.5626495361328,
+        "min_speed_kmh": 65.03983840942384,
+        "avg_speed_kmh": 152.63427190738966,
+        "avg_throttle_pct": 48.60556928653814,
+        "avg_brake_pct": 15.613049925852692
+      }
+    },
+    {
+      "car_code": 3485,
+      "track_id": 152,
+      "lap_number": 3,
+      "lap_time_ms": 98485,
+      "session_notes": null,
+      "original_session_id": 3,
+      "original_lap_id": 58,
+      "sector1_ms": 29536,
+      "sector2_ms": 41066,
+      "sector3_ms": 27883,
+      "stats": {
+        "max_speed_kmh": 306.7933776855469,
+        "min_speed_kmh": 54.85315017700196,
+        "avg_speed_kmh": 154.5110239661916,
+        "avg_throttle_pct": 48.44640445448783,
+        "avg_brake_pct": 15.641012878327842
+      }
+    },
+    {
+      "car_code": 3485,
+      "track_id": 152,
+      "lap_number": 4,
+      "lap_time_ms": 97467,
+      "session_notes": null,
+      "original_session_id": 3,
+      "original_lap_id": 59,
+      "sector1_ms": 28976,
+      "sector2_ms": 40970,
+      "sector3_ms": 27521,
+      "stats": {
+        "max_speed_kmh": 308.84348144531253,
+        "min_speed_kmh": 65.00956420898437,
+        "avg_speed_kmh": 156.17672052813947,
+        "avg_throttle_pct": 49.76395482953784,
+        "avg_brake_pct": 15.213446527721896
+      }
+    },
+    {
+      "car_code": 3539,
+      "track_id": 152,
+      "lap_number": 1,
+      "lap_time_ms": 101960,
+      "session_notes": null,
+      "original_session_id": 1,
+      "original_lap_id": 1,
+      "sector1_ms": 46258,
+      "sector2_ms": 34127,
+      "sector3_ms": 21575,
+      "stats": {
+        "max_speed_kmh": 247.19782104492188,
+        "min_speed_kmh": 57.51272392272949,
+        "avg_speed_kmh": 139.6051820212795,
+        "avg_throttle_pct": 70.9923835125448,
+        "avg_brake_pct": 7.385884461311407
+      }
+    },
+    {
+      "car_code": 3539,
+      "track_id": 152,
+      "lap_number": 1,
+      "lap_time_ms": 102407,
+      "session_notes": null,
+      "original_session_id": 1,
+      "original_lap_id": 5,
+      "sector1_ms": 30755,
+      "sector2_ms": 41592,
+      "sector3_ms": 30060,
+      "stats": {
+        "max_speed_kmh": 256.87001953125,
+        "min_speed_kmh": 64.39266815185547,
+        "avg_speed_kmh": 148.18572305850685,
+        "avg_throttle_pct": 62.18590430964053,
+        "avg_brake_pct": 12.483213337418302
+      }
+    },
+    {
+      "car_code": 3539,
+      "track_id": 152,
+      "lap_number": 2,
+      "lap_time_ms": 101245,
+      "session_notes": null,
+      "original_session_id": 1,
+      "original_lap_id": 6,
+      "sector1_ms": 30099,
+      "sector2_ms": 41983,
+      "sector3_ms": 29163,
+      "stats": {
+        "max_speed_kmh": 258.6561767578125,
+        "min_speed_kmh": 53.505896759033206,
+        "avg_speed_kmh": 150.1093248138428,
+        "avg_throttle_pct": 62.8157185507948,
+        "avg_brake_pct": 12.811425804889856
+      }
+    },
+    {
+      "car_code": 3539,
+      "track_id": 152,
+      "lap_number": 3,
+      "lap_time_ms": 100327,
+      "session_notes": null,
+      "original_session_id": 1,
+      "original_lap_id": 7,
+      "sector1_ms": 30231,
+      "sector2_ms": 41211,
+      "sector3_ms": 28885,
+      "stats": {
+        "max_speed_kmh": 260.4944091796875,
+        "min_speed_kmh": 64.0681869506836,
+        "avg_speed_kmh": 151.18093689885086,
+        "avg_throttle_pct": 62.18445510784477,
+        "avg_brake_pct": 12.383204818727624
+      }
+    },
+    {
+      "car_code": 3539,
+      "track_id": 152,
+      "lap_number": 4,
+      "lap_time_ms": 100316,
+      "session_notes": null,
+      "original_session_id": 1,
+      "original_lap_id": 8,
+      "sector1_ms": 29699,
+      "sector2_ms": 41314,
+      "sector3_ms": 29303,
+      "stats": {
+        "max_speed_kmh": 259.56642150878906,
+        "min_speed_kmh": 70.79497833251953,
+        "avg_speed_kmh": 151.65756895880028,
+        "avg_throttle_pct": 62.03988024849415,
+        "avg_brake_pct": 11.642348250149038
+      }
+    },
+    {
+      "car_code": 3539,
+      "track_id": 152,
+      "lap_number": 5,
+      "lap_time_ms": 101063,
+      "session_notes": null,
+      "original_session_id": 1,
+      "original_lap_id": 9,
+      "sector1_ms": 29799,
+      "sector2_ms": 40866,
+      "sector3_ms": 30398,
+      "stats": {
+        "max_speed_kmh": 262.37933349609375,
+        "min_speed_kmh": 68.33015441894531,
+        "avg_speed_kmh": 150.20177440215542,
+        "avg_throttle_pct": 64.26502923068963,
+        "avg_brake_pct": 12.509765119768224
+      }
+    },
+    {
+      "car_code": 3539,
+      "track_id": 152,
+      "lap_number": 6,
+      "lap_time_ms": 99096,
+      "session_notes": null,
+      "original_session_id": 1,
+      "original_lap_id": 10,
+      "sector1_ms": 30354,
+      "sector2_ms": 40057,
+      "sector3_ms": 28685,
+      "stats": {
+        "max_speed_kmh": 261.00340576171874,
+        "min_speed_kmh": 62.390863037109376,
+        "avg_speed_kmh": 153.43508209513368,
+        "avg_throttle_pct": 63.8474373940629,
+        "avg_brake_pct": 13.582899691999234
+      }
+    },
+    {
+      "car_code": 3539,
+      "track_id": 152,
+      "lap_number": 7,
+      "lap_time_ms": 99629,
+      "session_notes": null,
+      "original_session_id": 1,
+      "original_lap_id": 11,
+      "sector1_ms": 29672,
+      "sector2_ms": 40947,
+      "sector3_ms": 29010,
+      "stats": {
+        "max_speed_kmh": 262.6551177978516,
+        "min_speed_kmh": 62.76504364013672,
+        "avg_speed_kmh": 152.5130664570786,
+        "avg_throttle_pct": 62.98680891128411,
+        "avg_brake_pct": 11.836681133889059
+      }
+    },
+    {
+      "car_code": 3539,
+      "track_id": 152,
+      "lap_number": 8,
+      "lap_time_ms": 101135,
+      "session_notes": null,
+      "original_session_id": 1,
+      "original_lap_id": 12,
+      "sector1_ms": 30039,
+      "sector2_ms": 41687,
+      "sector3_ms": 29409,
+      "stats": {
+        "max_speed_kmh": 261.8518798828125,
+        "min_speed_kmh": 62.454769134521484,
+        "avg_speed_kmh": 150.38455952763616,
+        "avg_throttle_pct": 62.48081700961815,
+        "avg_brake_pct": 12.728459319137112
+      }
+    },
+    {
+      "car_code": 3539,
+      "track_id": 152,
+      "lap_number": 9,
+      "lap_time_ms": 100086,
+      "session_notes": null,
+      "original_session_id": 1,
+      "original_lap_id": 13,
+      "sector1_ms": 30464,
+      "sector2_ms": 40519,
+      "sector3_ms": 29103,
+      "stats": {
+        "max_speed_kmh": 261.8609985351563,
+        "min_speed_kmh": 60.46532363891602,
+        "avg_speed_kmh": 152.1110431864895,
+        "avg_throttle_pct": 63.49440825455911,
+        "avg_brake_pct": 13.324647760852883
+      }
+    },
+    {
+      "car_code": 3539,
+      "track_id": 152,
+      "lap_number": 10,
+      "lap_time_ms": 99154,
+      "session_notes": null,
+      "original_session_id": 1,
+      "original_lap_id": 14,
+      "sector1_ms": 29526,
+      "sector2_ms": 40255,
+      "sector3_ms": 29373,
+      "stats": {
+        "max_speed_kmh": 262.6679168701172,
+        "min_speed_kmh": 60.88964996337891,
+        "avg_speed_kmh": 153.32245012130392,
+        "avg_throttle_pct": 64.51049607942018,
+        "avg_brake_pct": 13.384816693528984
+      }
+    }
+  ]
+}

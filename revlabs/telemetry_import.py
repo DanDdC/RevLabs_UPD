@@ -260,13 +260,18 @@ def run_import_from_json(json_path, print_func=print):
                 continue
 
         frames = lap_data.get('frames', [])
-        if not frames:
-            skipped += 1
-            continue
-
         stats = lap_data.get('stats', {})
 
-        s1, s2, s3 = calculate_sectors(frames, lap_time_ms, track.length_km)
+        if frames:
+            s1, s2, s3 = calculate_sectors(frames, lap_time_ms, track.length_km)
+            total_frames = len(frames)
+            import_max_rpm = stats.get('max_rpm')
+        else:
+            s1 = lap_data.get('sector1_ms')
+            s2 = lap_data.get('sector2_ms')
+            s3 = lap_data.get('sector3_ms')
+            total_frames = 0
+            import_max_rpm = None
 
         TelemetryLap.objects.create(
             car=car,
@@ -279,13 +284,13 @@ def run_import_from_json(json_path, print_func=print):
             avg_speed_kmh=stats.get('avg_speed_kmh'),
             max_speed_kmh=stats.get('max_speed_kmh'),
             min_speed_kmh=stats.get('min_speed_kmh'),
-            max_rpm=stats.get('max_rpm'),
+            max_rpm=import_max_rpm,
             avg_throttle_pct=stats.get('avg_throttle_pct'),
             avg_brake_pct=stats.get('avg_brake_pct'),
             session_notes=lap_data.get('session_notes', ''),
             original_session_id=lap_data.get('original_session_id'),
             original_lap_id=original_lap_id,
-            total_frames=len(frames),
+            total_frames=total_frames,
             sector_1_ms=s1,
             sector_2_ms=s2,
             sector_3_ms=s3,
@@ -303,16 +308,16 @@ def run_import_from_json(json_path, print_func=print):
 def _trim_excess_laps(print_func=print):
     """Trim to top 10 per car+track combination. Returns count of deleted laps."""
     trimmed = 0
-    for car in Car.objects.filter(car_code__gt=0):
-        for track in Track.objects.filter(track_id__gt=0):
-            laps_list = TelemetryLap.objects.filter(
-                car=car, track=track, is_complete=True
-            ).order_by('lap_time_ms')
-            if laps_list.count() > 10:
-                to_delete = laps_list[10:]
-                for lap in to_delete:
-                    lap.delete()
-                trimmed += len(to_delete)
+    combos = TelemetryLap.objects.filter(is_complete=True).values('car_id', 'track_id').order_by('car_id', 'track_id').distinct()
+    for combo in combos:
+        laps_list = TelemetryLap.objects.filter(
+            car_id=combo['car_id'], track_id=combo['track_id'], is_complete=True
+        ).order_by('lap_time_ms')
+        if laps_list.count() > 10:
+            to_delete = laps_list[10:]
+            for lap in to_delete:
+                lap.delete()
+            trimmed += len(to_delete)
     if trimmed:
         print_func(f"Removidas {trimmed} voltas extras (mantidas apenas top 10 por carro/pista)")
     return trimmed
@@ -321,35 +326,39 @@ def _trim_excess_laps(print_func=print):
 def _collect_results(print_func=print):
     """Collect summary results for all car+track combinations."""
     results = []
-    for car in Car.objects.filter(car_code__gt=0):
-        for track in Track.objects.filter(track_id__gt=0):
-            laps_list = TelemetryLap.objects.filter(car=car, track=track, is_complete=True).order_by('lap_time_ms')
-            if laps_list.exists():
-                best = laps_list.first()
-                count = laps_list.count()
-                top10_avg = sum(l.lap_time_seconds for l in laps_list) / count
-                info = {
-                    'car': str(car),
-                    'track': str(track),
-                    'count': count,
-                    'best_time': best.lap_time_seconds,
-                    'avg_time': top10_avg,
-                    'max_speed': best.max_speed_kmh,
-                    'avg_speed': best.avg_speed_kmh,
-                    'sectors': {
-                        's1': best.sector_1_ms,
-                        's2': best.sector_2_ms,
-                        's3': best.sector_3_ms,
-                    } if best.sector_1_ms else None,
-                }
-                results.append(info)
-                print_func(f"\n{car.name} @ {track.name}:")
-                print_func(f"  Total de voltas: {count}")
-                print_func(f"  Melhor tempo: {best.lap_time_seconds:.3f}s")
-                if best.sector_1_ms:
-                    proj = best.sector_1_ms + best.sector_2_ms + best.sector_3_ms
-                    print_func(f"  Setores: {best.sector_1_ms} / {best.sector_2_ms} / {best.sector_3_ms} ms (projetado: {proj} ms)")
-                print_func(f"  Media top {count}: {top10_avg:.3f}s")
-                print_func(f"  Vel max: {best.max_speed_kmh:.1f} km/h")
-                print_func(f"  Vel media: {best.avg_speed_kmh:.1f} km/h")
+    combos = TelemetryLap.objects.filter(is_complete=True).values('car_id', 'track_id').order_by('car_id', 'track_id').distinct()
+    for combo in combos:
+        car = Car.objects.get(id=combo['car_id'])
+        track = Track.objects.get(id=combo['track_id'])
+        laps_list = TelemetryLap.objects.filter(
+            car=car, track=track, is_complete=True
+        ).order_by('lap_time_ms')
+        if laps_list.exists():
+            best = laps_list.first()
+            count = laps_list.count()
+            top10_avg = sum(l.lap_time_seconds for l in laps_list) / count
+            info = {
+                'car': str(car),
+                'track': str(track),
+                'count': count,
+                'best_time': best.lap_time_seconds,
+                'avg_time': top10_avg,
+                'max_speed': best.max_speed_kmh,
+                'avg_speed': best.avg_speed_kmh,
+                'sectors': {
+                    's1': best.sector_1_ms,
+                    's2': best.sector_2_ms,
+                    's3': best.sector_3_ms,
+                } if best.sector_1_ms else None,
+            }
+            results.append(info)
+            print_func(f"\n{car.name} @ {track.name}:")
+            print_func(f"  Total de voltas: {count}")
+            print_func(f"  Melhor tempo: {best.lap_time_seconds:.3f}s")
+            if best.sector_1_ms:
+                proj = best.sector_1_ms + best.sector_2_ms + best.sector_3_ms
+                print_func(f"  Setores: {best.sector_1_ms} / {best.sector_2_ms} / {best.sector_3_ms} ms (projetado: {proj} ms)")
+            print_func(f"  Media top {count}: {top10_avg:.3f}s")
+            print_func(f"  Vel max: {best.max_speed_kmh:.1f} km/h")
+            print_func(f"  Vel media: {best.avg_speed_kmh:.1f} km/h")
     return results
